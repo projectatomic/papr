@@ -1,0 +1,9 @@
+#cloud-config
+disable_root: 0
+ssh_pwauth: 1
+
+users:
+ - name: root
+   lock-passwd: false
+   inactive: false
+   system: false

@@ -1,0 +1,65 @@
+# The current format is very simple and may change in the
+# future as more features get added, though we will try to
+# maintain backwards compatibility (or help projects migrate
+# to the new format).
+
+# REQUIRED
+# All details about the host to provision go under the host
+# key, though for now, 'distro' is the only handled child:
+host:
+    # REQUIRED
+    # Specify the distro to provision. More options will be
+    # added, but currently available are:
+    #   fedora/24/cloud
+    #   centos/7/cloud
+    distro: fedora/24/cloud # REQUIRED
+
+# OPTIONAL
+# List the branches to test. If omitted, only the master
+# branch is tested.
+branches:
+    - master
+    - dev
+
+# OPTIONAL
+# GitHub commit status context to use when reporting back
+# status updates to GitHub. If omitted, defaults to
+# 'Red Hat CI'.
+context: 'CI Tester'
+
+# OPTIONAL
+# Additional YUM repositories to inject during provisioning.
+extra-repos:
+  - repo1:
+      name: My repo
+      baseurl: http://example.com/repo
+      gpgcheck: 0
+  - repo2:
+      name: My other repo
+      metalink: http://example.com/metalink?repo=mydistro
+      gpgcheck: 0
+
+# OPTIONAL
+# List of packages to install during provisioning.
+packages:
+    - make
+    - gcc
+
+# REQUIRED
+# Put the tasks to be executed in the 'tests' key. They are
+# run from the root of the repo.
+tests:
+    - make
+    - make check
+    - make install
+    - make installcheck
+
+# OPTIONAL
+# Maximum time to allow for the test. Accepts the same
+# syntax as timeout(1). If omitted, defaults to '2h'.
+timeout: 30m
+
+# OPTIONAL
+# List of files/directories to upload to Amazon S3.
+artifacts:
+    - test-suite.log

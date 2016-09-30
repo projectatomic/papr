@@ -1,0 +1,433 @@
+#!/bin/bash
+set -Exeuo pipefail
+
+# This is the main script that interprets and executes the
+# .redhat-ci.yml file. We should expect a lot of the logic
+# here to migrate to Python and merged with the YAML parser
+# as we get more complex.
+
+THIS_DIR=$(dirname $0)
+
+main() {
+
+    # NB: bash trickery: don't use any of the function calls
+    # in if-statements, it will completely disable set -e
+    # inside the function... Yet another reason to port this
+    # to Python.
+
+    # we keep everything non-reusable for this run in state/
+    rm -rf state && mkdir state
+
+    # Make sure we update GitHub if we exit due to errexit.
+    # We also do a GitHub update on clean exit.
+    ensure_err_github_update
+
+    validate_vars
+
+    checkout_ref
+
+    if [ ! -f checkouts/$github_repo/.redhat-ci.yml ]; then
+        echo "INFO: No .redhat-ci.yml file found."
+        exit 0
+    fi
+
+    parse_yml
+
+    # should we even be running?
+    if [ -n "${github_branch:-}" ]; then
+        if ! grep -q $github_branch state/parsed/branches; then
+            echo "INFO: Not defined to run for branch '$github_branch'."
+            exit 0
+        fi
+    fi
+
+    # Before we even provision, let's make sure we will
+    # teardown at exit time.
+    ensure_teardown_node
+
+    provision_node
+
+    run_tests
+
+    prep_artifacts
+
+    final_github_update
+}
+
+validate_vars() {
+
+    if [ -n "${github_branch:-}" ] && [ -n "${github_pull_id:-}" ]; then
+        echo "ERROR: Can't specify both github_branch and github_pull_id."
+        return 1
+    elif [ -z "${github_branch:-}" ] && [ -z "${github_pull_id:-}" ]; then
+        echo "ERROR: One of github_branch or github_pull_id must be specified."
+        return 1
+    else
+        # let's not print token information
+        set +x
+        for var in github_{repo,token} os_{keyname,network}; do
+            if [ -z "${!var:-}" ]; then
+                echo "ERROR: Missing variable '${var}'."
+                return 1
+            fi
+        done
+        set -x
+    fi
+}
+
+checkout_ref() {
+
+    local repo=checkouts/$github_repo
+
+    # let's re-use checkouts if available (this is safe since we don't actually
+    # pollute these repos, we just rsync them)
+    if [ ! -d $repo ]; then
+        git clone https://github.com/$github_repo $repo
+    fi
+
+    local sha_cmp
+
+    # checkout target commit
+    if [ -n "${github_branch:-}" ]; then
+        git -C $repo fetch origin $github_branch
+        sha_cmp=$(git -C $repo rev-parse FETCH_HEAD)
+    else
+        if git -C $repo fetch origin refs/pull/$github_pull_id/merge; then
+            touch state/is_merge_sha
+            sha_cmp=$(git -C $repo rev-parse FETCH_HEAD^2)
+        else
+            git -C $repo fetch origin refs/pull/$github_pull_id/head
+            sha_cmp=$(git -C $repo rev-parse FETCH_HEAD)
+        fi
+    fi
+
+    if [ -n "${github_commit:-}" ] && [ "$github_commit" != "$sha_cmp" ]; then
+        echo "INFO: Expected commit $github_commit, but received $sha_cmp."
+        echo "INFO: Most likely the ref was updated since this job (or parent"
+        echo "INFO: job) was triggered. Silently exiting since another run with"
+        echo "INFO: the updated SHA is underway."
+        exit 0
+    elif [ -z "${github_commit:-}" ]; then
+        # define it as a global
+        github_commit=$sha_cmp
+    fi
+
+    git -C $repo reset --hard FETCH_HEAD
+    git -C $repo rev-parse HEAD > state/sha
+}
+
+parse_yml() {
+
+    # give the parser a dir in which to dump all the extracted bits of info
+    mkdir state/parsed
+
+    if ! $THIS_DIR/utils/yml-parser.py state/parsed \
+            checkouts/$github_repo/.redhat-ci.yml; then
+        update_github failure "ERROR: Invalid .redhat-ci.yml"
+        exit 0
+    fi
+}
+
+provision_node() {
+
+    # the allowed fields for "distro" are the same as the image name in glance
+    local image=$(cat state/parsed/distro)
+
+    update_github pending "Provisioning test node."
+
+    # XXX: We hardcode m1.small for now, but these really
+    # should bespecified indirectly from the .redhat-ci YAML
+    # file through e.g. min-* vars.
+    env \
+        os_image="$image" \
+        os_flavor=m1.small \
+        os_name_prefix=github-ci-testnode \
+        os_user_data="$THIS_DIR/utils/user-data" \
+        "$THIS_DIR/utils/os_provision.py" state/
+
+    ssh_wait
+
+    push_repo
+
+    push_worker_script
+
+    inject_yum_repos
+}
+
+vmssh() {
+    ssh -q \
+        -o StrictHostKeyChecking=no \
+        -o PasswordAuthentication=no \
+        -o UserKnownHostsFile=/dev/null \
+        root@$(cat state/node_addr) "$@"
+}
+
+vmscp() {
+    scp -q \
+        -o StrictHostKeyChecking=no \
+        -o PasswordAuthentication=no \
+        -o UserKnownHostsFile=/dev/null "$@"
+}
+
+ssh_wait() {
+    local node_addr=$(cat state/node_addr)
+
+    timeout 60s "$THIS_DIR/utils/sshwait" $node_addr
+
+    # SSH may be ready, but cloud-init might not have
+    # finished injecting the key yet.
+    max_sleep=30
+    while ! vmssh true && [ $max_sleep -gt 0 ]; do
+        max_sleep=$((max_sleep - 1))
+        sleep 1
+    done
+
+    # do a final test and let it fail if it's still not done
+    vmssh true
+}
+
+push_repo() {
+    local node_addr=$(cat state/node_addr)
+
+    rsync --quiet -az --no-owner --no-group \
+        -e "ssh -q -o StrictHostKeyChecking=no \
+                   -o PasswordAuthentication=no \
+                   -o UserKnownHostsFile=/dev/null" \
+        checkouts/$github_repo/ root@$node_addr:/root/checkout/
+}
+
+push_worker_script() {
+    local node_addr=$(cat state/node_addr)
+
+    # let's build the worker script that will be executed on the node
+    touch state/worker.sh
+
+    append() {
+        echo "$@" >> state/worker.sh
+    }
+
+    append "#!/bin/bash"
+    append "set -xeuo pipefail"
+    append
+
+    if [ -f state/parsed/packages ]; then
+        append yum install -y "$(cat state/parsed/packages)"
+    fi
+
+    append cd checkout
+    append "$(cat state/parsed/tests)"
+
+    unset -f append
+
+    vmscp state/worker.sh root@$node_addr:/root
+}
+
+inject_yum_repos() {
+    local node_addr=$(cat state/node_addr)
+
+    if [ ! -f state/parsed/extras.repo ]; then
+        return 0
+    fi
+
+    vmscp state/parsed/extras.repo root@$node_addr:/etc/yum.repos.d
+}
+
+run_tests() {
+    local node_addr=$(cat state/node_addr)
+
+    echo $RANDOM > state/random
+    local upload_dir=state/$github_commit.$(cat state/random)
+    mkdir $upload_dir
+
+    update_github pending "Running tests."
+
+    # Seed output.txt with useful information
+    echo "### $(date --utc)" > $upload_dir/output.txt
+
+    if [ -n "${github_branch:-}" ]; then
+        echo "### Testing branch $github_branch" >> $upload_dir/output.txt
+    else
+        echo -n "### Testing PR #$github_pull_id" >> $upload_dir/output.txt
+        if [ ! -f state/is_merge_sha ]; then
+            echo " (WARNING: cannot test merge, check for conflicts)" \
+                >> $upload_dir/output.txt
+        else
+            echo >> $upload_dir/output.txt
+        fi
+    fi
+
+    if [ -n "${BUILD_ID:-}" ]; then
+        echo "### BUILD_ID $BUILD_ID" >> $upload_dir/output.txt
+    fi
+
+    local rc=0
+    local timeout=$(cat state/parsed/timeout)
+    timeout --kill-after=30s $timeout \
+        ssh -q -o StrictHostKeyChecking=no \
+               -o UserKnownHostsFile=/dev/null \
+               root@$node_addr "sh worker.sh 2>&1" | \
+        tee -a $upload_dir/output.txt || rc=$?
+    echo "$rc" > state/rc
+}
+
+prep_artifacts() {
+    local node_addr=$(cat state/node_addr)
+    local upload_dir=state/$github_commit.$(cat state/random)
+
+    # let's pull back the artifacts
+    if [ -f state/parsed/artifacts ]; then
+        mkdir $upload_dir/artifacts
+
+        # So apparently the rsync in RHEL/Centos 7 is too
+        # old to have --ignore-missing-args, which would be
+        # really handy here. Fun/sad fact: that feature has
+        # been upstream since *2009*. Wow.
+
+        #rsync -raz --quiet --delete-missing-args --no-owner --no-group \
+        #    -e "ssh -q -o StrictHostKeyChecking=no \
+        #               -o PasswordAuthentication=no \
+        #               -o UserKnownHostsFile=/dev/null" \
+        #    --files-from=state/parsed/artifacts \
+        #    root@$node_addr:checkout $upload_dir/artifacts/
+
+        # use a variable instead or `read` misses the last non-newline
+        # terminated line
+        local artifacts=$(cat state/parsed/artifacts)
+        while read artifact; do
+            vmscp -r root@$node_addr:checkout/$artifact \
+                $upload_dir/artifacts || :
+        done <<< "$artifacts"
+
+        local indexer=$(realpath $THIS_DIR/utils/indexer.py)
+        pushd $upload_dir
+        python $indexer
+        popd
+
+        # we're gonna link to the index file
+        local s3_object="index.html"
+    else
+        # we'll link directly to the output.txt file
+        local s3_object="output.txt"
+    fi
+
+    # only actually upload if we're given $s3_prefix
+    if [ -n "${s3_prefix:-}" ]; then
+
+        local full_prefix=$s3_prefix/$github_repo/$(basename $upload_dir)
+
+        aws s3 sync $upload_dir s3://$full_prefix
+
+        # full address we'll use for the final commit status update
+        printf "https://s3.amazonaws.com/%s/%s" \
+            $full_prefix $s3_object > state/url
+    fi
+}
+
+final_github_update() {
+    local rc
+    local state
+    local desc
+
+    rc=$(cat state/rc)
+    if [ $rc == 124 ] || [ $rc == 137 ]; then
+        state=failure
+        desc="Test timed out and was aborted."
+    elif [ $rc != 0 ]; then
+        state=failure
+        desc="Test failed with rc $rc."
+    else
+        state=success
+        desc="All tests passed"
+        if [ -n "${github_pull_id:-}" ] && [ ! -f state/is_merge_sha ]; then
+            desc="$desc, but merge commit could not be tested"
+        fi
+        desc="${desc}."
+    fi
+
+    local url=
+    if [ -f state/url ]; then
+        url=$(cat state/url)
+    fi
+
+    update_github $state "$desc" "$url"
+}
+
+ensure_err_github_update() {
+    trap "update_github error 'An internal error occurred.'" ERR
+}
+
+teardown_node() {
+
+    if [ -f state/node_name ]; then
+
+        local node_name=$(cat state/node_name)
+        local node_addr=$(cat state/node_addr)
+
+        if [ -f state/node_addr ] && \
+           [ -n "${os_floating_ip_pool:-}" ]; then
+            nova floating-ip-disassociate $node_name $node_addr
+            nova floating-ip-delete $node_addr
+        fi
+
+        nova delete $(cat state/node_name)
+    fi
+}
+
+ensure_teardown_node() {
+    trap teardown_node EXIT
+}
+
+# Send a commit status update to GitHub
+# $1    state (pending, success, error, or failure)
+# $2    description (optional)
+# $3    url (optional)
+update_github() {
+
+    local state=$1; shift
+
+    local description=""
+    if [ $# -gt 0 ]; then
+        description=$1; shift
+    fi
+
+    local url=""
+    if [ $# -gt 0 ]; then
+        url=$1; shift
+    fi
+
+    # try to use the parsed context if past that point, otherwise use default
+    local context="Red Hat CI"
+    if [ -f state/parsed/context ]; then
+        context=$(cat state/parsed/context)
+    fi
+
+    if [ -z "${github_token:-}" ]; then
+        echo "No github_token defined, punting on GitHub commit status update:"
+        echo "$github_repo $github_commit $state $context $description $url"
+        return
+    fi
+
+    python $THIS_DIR/utils/gh-update.py \
+        --repo $github_repo \
+        --commit $github_commit \
+        --token env:github_token \
+        --state "$state" \
+        --context "$context" \
+        --description "$description" \
+        --url "$url"
+
+    # Also update the merge sha if we're testing a merge commit.
+    # This is useful for homu: https://github.com/servo/homu/pull/54
+    if [ -f state/is_merge_sha ]; then
+        python $THIS_DIR/utils/gh-update.py \
+            --repo $github_repo \
+            --commit $(cat state/sha) \
+            --token env:github_token \
+            --state "$state" \
+            --context "$context" \
+            --description "$description" \
+            --url "$url"
+    fi
+}
+
+main "$@"
