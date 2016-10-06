@@ -11,8 +11,10 @@ host:
     # Specify the distro to provision. More options will be
     # added, but currently available are:
     #   fedora/24/cloud
+    #   fedora/24/atomic
     #   centos/7/cloud
-    distro: fedora/24/cloud # REQUIRED
+    #   centos/7/atomic
+    distro: fedora/24/cloud
 
 # OPTIONAL
 # List the branches to test. If omitted, only the master
