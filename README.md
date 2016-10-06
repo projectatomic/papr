@@ -7,7 +7,7 @@ keys can be found [here](sample.redhat-ci.yml).
 Projects currently monitored are:
 
 - [projectatomic/atomic](https://github.com/projectatomic/atomic)
-- [projectatomic/commissaire](https://github.com/ostreedev/ostree)
+- [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 
