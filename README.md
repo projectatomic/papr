@@ -10,6 +10,9 @@ Projects currently monitored are:
 - [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
+- [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
+- [projectatomic/commissaire-http](https://github.com/projectatomic/commissaire-http)
+- [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
 
 **If you would like to have a repository added, please open
 a pull request to update the list above.**
