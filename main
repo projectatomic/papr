@@ -61,7 +61,7 @@ validate_vars() {
     else
         # let's not print token information
         set +x
-        for var in github_{repo,token} os_{keyname,network}; do
+        for var in github_{repo,token}; do
             if [ -z "${!var:-}" ]; then
                 echo "ERROR: Missing variable '${var}'."
                 return 1
