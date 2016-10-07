@@ -19,19 +19,27 @@ def write_to_file(fn, s):
     with open(os.path.join(output_dir, fn), 'w') as f:
         f.write(s);
 
-if 'host' not in yml:
-    print("ERROR: Missing 'host' entry in YAML.")
+# Let's validate before writing any files.
+
+if 'host' in yml and 'container' in yml:
+    print("ERROR: Cannot have both 'host' and 'container' entries in YAML.")
+    exit(1)
+elif 'host' in yml:
+    if 'distro' not in yml['host']:
+        print("ERROR: Missing 'distro' entry from 'host' in YAML.")
+        exit(1)
+elif 'container' in yml:
+    if 'image' not in yml['container']:
+        print("ERROR: Missing 'image' entry from 'container' in YAML.")
+        exit(1)
+else:
+    print("ERROR: Missing both 'host' and 'container' entries in YAML.")
     exit(1)
 
-if 'distro' not in yml['host']:
-    print("ERROR: Missing 'distro' entry from 'host' in YAML.")
-    exit(1)
-
-if 'tests' not in yml:
-    print("ERROR: Missing 'tests' entry in YAML.")
-    exit(1)
-
-write_to_file("distro", yml['host']['distro'])
+if 'host' in yml:
+    write_to_file("distro", yml['host']['distro'])
+if 'container' in yml:
+    write_to_file("image", yml['container']['image'])
 write_to_file("tests", '\n'.join(yml['tests']))
 write_to_file("branches", '\n'.join(yml.get('branches', ['master'])))
 write_to_file("timeout", yml.get('timeout','2h'))
@@ -44,7 +52,7 @@ if 'extra-repos' in yml:
         for key, val in repo.iteritems():
             repos += "%s=%s\n" % (key, val)
     if repos != "":
-        write_to_file("extras.repo", repos)
+        write_to_file("rhci-extras.repo", repos)
 
 if 'packages' in yml:
     write_to_file("packages", ' '.join(yml['packages']))

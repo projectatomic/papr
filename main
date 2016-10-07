@@ -41,11 +41,7 @@ main() {
         fi
     fi
 
-    # Before we even provision, let's make sure we will
-    # teardown at exit time.
-    ensure_teardown_node
-
-    provision_node
+    provision_env
 
     run_tests
 
@@ -123,8 +119,24 @@ parse_yml() {
 
     if ! $THIS_DIR/utils/yml-parser.py state/parsed \
             checkouts/$github_repo/.redhat-ci.yml; then
-        update_github failure "ERROR: Invalid .redhat-ci.yml"
+        update_github failure "ERROR: Invalid .redhat-ci.yml file."
         exit 0
+    fi
+}
+
+provision_env() {
+
+    if containerized; then
+
+        provision_container
+
+    else
+
+        # Before we even provision, let's make sure we will
+        # teardown at exit time.
+        ensure_teardown_node
+
+        provision_node
     fi
 }
 
@@ -136,8 +148,8 @@ provision_node() {
     update_github pending "Provisioning test node."
 
     # XXX: We hardcode m1.small for now, but these really
-    # should bespecified indirectly from the .redhat-ci YAML
-    # file through e.g. min-* vars.
+    # should be specified indirectly from the .redhat-ci
+    # YAML file through e.g. min-* vars.
     env \
         os_image="$image" \
         os_flavor=m1.small \
@@ -149,9 +161,12 @@ provision_node() {
 
     push_repo
 
-    push_worker_script
-
     inject_yum_repos
+
+    gen_worker_script
+
+    # push it out to the node
+    vmscp state/worker.sh root@$(cat state/node_addr):/root
 }
 
 vmssh() {
@@ -182,8 +197,37 @@ ssh_wait() {
         sleep 1
     done
 
-    # do a final test and let it fail if it's still not done
-    vmssh true
+    # do a final test on timeout
+    if ! vmssh true; then
+        echo "ERROR: Timed out while waiting for SSH."
+    fi
+}
+
+provision_container() {
+    local image=$(cat state/parsed/image)
+
+    # Let's pre-pull the image so that it doesn't count
+    # as part of the test timeout.
+    if docker pull "$image"; then
+        update_github failure "ERROR: Could not pull image '$image'."
+        exit 0
+    fi
+
+    # Everything that will be bind-mounted goes there.
+    mkdir state/cnt
+
+    cp -a checkouts/$github_repo state/cnt/checkout
+
+    # let's just make it always exist so we don't have to
+    # use eval during docker run
+    touch state/cnt/rhci-extras.repo
+    if [ -f state/parsed/rhci-extras.repo ]; then
+        cp state/parsed/rhci-extras.repo state/cnt
+    fi
+
+    gen_worker_script
+
+    cp state/worker.sh state/cnt
 }
 
 push_repo() {
@@ -196,8 +240,7 @@ push_repo() {
         checkouts/$github_repo/ root@$node_addr:/root/checkout/
 }
 
-push_worker_script() {
-    local node_addr=$(cat state/node_addr)
+gen_worker_script() {
 
     # let's build the worker script that will be executed on the node
     touch state/worker.sh
@@ -215,21 +258,20 @@ push_worker_script() {
     fi
 
     append cd checkout
+
     append "$(cat state/parsed/tests)"
 
     unset -f append
-
-    vmscp state/worker.sh root@$node_addr:/root
 }
 
 inject_yum_repos() {
     local node_addr=$(cat state/node_addr)
 
-    if [ ! -f state/parsed/extras.repo ]; then
+    if [ ! -f state/parsed/rhci-extras.repo ]; then
         return 0
     fi
 
-    vmscp state/parsed/extras.repo root@$node_addr:/etc/yum.repos.d
+    vmscp state/parsed/rhci-extras.repo root@$node_addr:/etc/yum.repos.d
 }
 
 run_tests() {
@@ -262,11 +304,39 @@ run_tests() {
 
     local rc=0
     local timeout=$(cat state/parsed/timeout)
-    timeout --kill-after=30s $timeout \
-        ssh -q -o StrictHostKeyChecking=no \
-               -o UserKnownHostsFile=/dev/null \
-               root@$node_addr "sh worker.sh 2>&1" | \
-        tee -a $upload_dir/output.txt || rc=$?
+
+    if ! containerized; then
+        timeout --kill-after=30s "$timeout" \
+            ssh -q -o StrictHostKeyChecking=no \
+                   -o UserKnownHostsFile=/dev/null \
+                   root@$node_addr "sh worker.sh 2>&1" | \
+            tee -a $upload_dir/output.txt || rc=$?
+    else
+        local mnt=$PWD/state/cnt
+
+        # We use below to make it more convenient for running unprivileged on
+        # dev machines. Though because we use timeout, sudo doesn't have control
+        # of the TTY, so we use it beforehand so it can cache credentials.
+        sudo true
+
+        # Setting a timeout on docker run is not reliable since it's the daemon
+        # running it. And we don't want to trust the timeout *inside* the
+        # container as well. So we follow up with a docker kill.
+        timeout --kill-after=30s "$timeout" \
+            sudo docker run --rm \
+                --workdir / \
+                --cidfile state/cid \
+                -v $mnt/checkout:/checkout:z \
+                -v $mnt/worker.sh:/worker.sh:z \
+                -v $mnt/rhci-extras.repo:/etc/yum.repos.d/rhci-extras.repo:z \
+                "$(cat state/parsed/image)" sh -c "sh worker.sh 2>&1" | \
+            tee -a $upload_dir/output.txt || rc=$?
+        if [ -f state/cid ]; then
+            # kill if it's not already dead
+            sudo docker kill $(cat state/cid) || :
+        fi
+    fi
+
     echo "$rc" > state/rc
 }
 
@@ -276,27 +346,41 @@ prep_artifacts() {
 
     # let's pull back the artifacts
     if [ -f state/parsed/artifacts ]; then
-        mkdir $upload_dir/artifacts
-
-        # So apparently the rsync in RHEL/Centos 7 is too
-        # old to have --ignore-missing-args, which would be
-        # really handy here. Fun/sad fact: that feature has
-        # been upstream since *2009*. Wow.
-
-        #rsync -raz --quiet --delete-missing-args --no-owner --no-group \
-        #    -e "ssh -q -o StrictHostKeyChecking=no \
-        #               -o PasswordAuthentication=no \
-        #               -o UserKnownHostsFile=/dev/null" \
-        #    --files-from=state/parsed/artifacts \
-        #    root@$node_addr:checkout $upload_dir/artifacts/
 
         # use a variable instead or `read` misses the last non-newline
         # terminated line
         local artifacts=$(cat state/parsed/artifacts)
-        while read artifact; do
-            vmscp -r root@$node_addr:checkout/$artifact \
-                $upload_dir/artifacts || :
-        done <<< "$artifacts"
+
+        mkdir $upload_dir/artifacts
+
+        if ! containerized; then
+
+            # So apparently the rsync in RHEL/Centos 7 is too
+            # old to have --ignore-missing-args, which would be
+            # really handy here. Fun/sad fact: that feature has
+            # been upstream since *2009*. Wow.
+
+            #rsync -raz --quiet --delete-missing-args --no-owner --no-group \
+            #    -e "ssh -q -o StrictHostKeyChecking=no \
+            #               -o PasswordAuthentication=no \
+            #               -o UserKnownHostsFile=/dev/null" \
+            #    --files-from=state/parsed/artifacts \
+            #    root@$node_addr:checkout $upload_dir/artifacts/
+
+            while read artifact; do
+                vmscp -r "root@$node_addr:checkout/$artifact" \
+                    $upload_dir/artifacts || :
+            done <<< "$artifacts"
+        else
+            # NB: we ran as root, so chown in case we're unprivileged
+            while read artifact; do
+                path="state/cnt/checkout/$artifact"
+                if sudo [ -e "$path" ]; then
+                    sudo chown -R $UID:$UID $path
+                    cp -r $path $upload_dir/artifacts
+                fi
+            done <<< "$artifacts"
+        fi
 
         local indexer=$(realpath $THIS_DIR/utils/indexer.py)
         pushd $upload_dir
@@ -375,6 +459,10 @@ teardown_node() {
 
 ensure_teardown_node() {
     trap teardown_node EXIT
+}
+
+containerized() {
+    [ -f state/parsed/image ]
 }
 
 # Send a commit status update to GitHub
