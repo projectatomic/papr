@@ -26,8 +26,6 @@ environment vars to be set:
   `gihub_pull_id`).
 - `github_pull_id` -- Pull request ID to test (incompatible
   with `github_branch`).
-- `os_keyname` -- OpenStack keypair to use for provisioning.
-- `os_network` -- OpenStack network to use for provisioning.
 
 The following optional environment vars may be set:
 
@@ -35,6 +33,10 @@ The following optional environment vars may be set:
   for handling of race conditions.
 - `github_token` -- If specified, update the commit status
   using GitHub's API, accessed with this repo-scoped token.
+- `os_keyname` -- OpenStack keypair to use for provisioning,
+  if you want to support virtualized tests.
+- `os_network` -- OpenStack network to use for provisioning,
+  if you want to support virtualized tests.
 - `os_floating_ip_pool` -- If specified, assign a floating
   IP to the provisioned node from this pool and use the IP
   to communicate with it. This is required if not running on
@@ -42,9 +44,10 @@ The following optional environment vars may be set:
 - `s3_prefix` -- If specified, artifacts will be uploaded to
   this S3 path, in `<bucket>[/<prefix>]` form.
 
-It also implicitly expects the usual OpenStack variables
-needed for authentication. These can normally be sourced
-from an RC file downloadable from the OpenStack interface:
+If you want to support virtualized tests, it also implicitly
+expects the usual OpenStack variables needed for
+authentication. These can normally be sourced from an RC
+file downloadable from the OpenStack interface:
 
 - `OS_AUTH_URL`
 - `OS_TENANT_ID`
@@ -64,11 +67,13 @@ can be run locally, which is useful for testing. The easiest
 way to get started is to run inside a Python virtualenv with
 the python-novaclient and awscli packages installed (the
 latter only being required if artifact uploading is wanted).
+Docker is also expected to be up and running for
+containerized tests.
 
 The script checks out the repo in `checkouts/$repo` and will
 re-use it if available rather than cloning each time. No
 builds are done on the host; the repo is transferred to the
-test node during provisioning.
+test environment during provisioning.
 
 A `state` directory is created, in which all temporary
 files that need to be stored during a run are kept.
