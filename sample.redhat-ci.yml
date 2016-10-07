@@ -3,18 +3,24 @@
 # maintain backwards compatibility (or help projects migrate
 # to the new format).
 
-# REQUIRED
+# REQUIRED (one of 'host' or 'container')
 # All details about the host to provision go under the host
 # key, though for now, 'distro' is the only handled child:
 host:
     # REQUIRED
     # Specify the distro to provision. More options will be
     # added, but currently available are:
-    #   fedora/24/cloud
-    #   fedora/24/atomic
-    #   centos/7/cloud
-    #   centos/7/atomic
+    #   - fedora/24/cloud
+    #   - fedora/24/atomic
+    #   - centos/7/cloud
+    #   - centos/7/atomic
     distro: fedora/24/cloud
+
+# REQUIRED (one of 'host' or 'container')
+container:
+    # REQUIRED
+    # Specify an FQIN or Docker Hub image.
+    image: fedora:24
 
 # OPTIONAL
 # List the branches to test. If omitted, only the master
