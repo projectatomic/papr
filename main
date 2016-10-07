@@ -189,6 +189,14 @@ ssh_wait() {
 
     timeout 60s "$THIS_DIR/utils/sshwait" $node_addr
 
+    # XXX: The timeout method below will fail on rare
+    # occasions in strange ways (the vmssh in the loop
+    # condition works, but the the follow-up one in the
+    # final test doesn't). Seems like it might be a blip in
+    # OpenStack. If this happens often, we might need to
+    # strengthen this to require e.g. $x secs of continuous
+    # `vmssh true`.
+
     # SSH may be ready, but cloud-init might not have
     # finished injecting the key yet.
     max_sleep=30
