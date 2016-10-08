@@ -59,17 +59,18 @@ def parse_args():
             if val.startswith('env:'):
                 new_val = os.environ.get(val[4:])
                 if new_val is None and arg in required_args:
-                    print "Parameter '%s' is required, but the given" % arg,
-                    print "environment variable '%s' is missing." % val[4:]
-                    return None
+                    parser.error(
+                        "Parameter '%s' is required, but the given"
+                        "environment variable '%s' is missing." % (
+                            arg, val[4:]))
                 setattr(args, arg, new_val)
             # we allow users to pass "" for optional vars to mean None so that
             # they don't have to resort to e.g. eval
             elif val == "":
                 if arg in required_args:
-                    print "Parameter '%s' is required, but the given" % arg,
-                    print "argument is empty."
-                    return None
+                    parser.error(
+                        "Parameter '%s' is required, but the given"
+                        "argument is empty." % arg)
                 setattr(args, arg, None)
 
     return args
@@ -97,15 +98,15 @@ def update_status(repo, commit, token, data):
     api_url = ("https://api.github.com/repos/%s/statuses/%s" %
                (repo, commit))
 
-    print "Updating status of commit", commit, "with data", data
+    print("Updating status of commit", commit, "with data", data)
 
     # use data= instead of json= in case we're running on an older requests
     resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
 
     if resp.status_code != requests.codes.created: # pylint: disable=no-member
-        print "Failed to update commit status [HTTP %d]" % resp.status_code
-        print resp.headers
-        print resp.json()
+        print("Failed to update commit status [HTTP %d]" % resp.status_code)
+        print(resp.headers)
+        print(resp.json())
         return False
 
     return True
