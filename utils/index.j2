@@ -4,9 +4,9 @@
   </head>
 <body>
 {% if files|length > 1 %}
-  {{ files|length }} entries<br><br>
+  {{ files|length }} entries
 {% else %}
-  {{ files|length }} entry<br><br>
+  {{ files|length }} entry
 {% endif %}
   <ul>
 {%- if not at_top %}<li><a href="../index.html">..</a></li>{% endif -%}
