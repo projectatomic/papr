@@ -1,14 +1,12 @@
-#!/bin/python
+#!/usr/bin/env python
+"""
+Small utility to facilitate updating GitHub commit CI
+status: https://developer.github.com/v3/repos/statuses/
 
-'''
-    Small utility to facilitate updating GitHub commit CI
-    status: https://developer.github.com/v3/repos/statuses/
-
-    Parameters are passed on the command-line. They can be
-    prefixed by 'env:' to denote a lookup in an environment
-    variable. E.g. --token env:token.
-'''
-
+Parameters are passed on the command-line. They can be
+prefixed by 'env:' to denote a lookup in an environment
+variable. E.g. --token env:token.
+"""
 
 import os
 import sys
@@ -37,10 +35,9 @@ def main():
 
 
 def parse_args():
-
     """
-        Parses program arguments and optionally resolves
-        pointers to environment variables.
+    Parses program arguments and optionally resolves
+    pointers to environment variables.
     """
 
     parser = argparse.ArgumentParser()
@@ -77,7 +74,6 @@ def parse_args():
 
 
 def craft_data_dict(state, context, description, url):
-
     "Creates the data dictionary as required by the API."
 
     data = {'state': state}
@@ -91,7 +87,6 @@ def craft_data_dict(state, context, description, url):
 
 
 def update_status(repo, commit, token, data):
-
     "Sends the status update's data using the GitHub API."
 
     token_header = {'Authorization': 'token ' + token}
@@ -103,13 +98,14 @@ def update_status(repo, commit, token, data):
     # use data= instead of json= in case we're running on an older requests
     resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
 
-    if resp.status_code != requests.codes.created: # pylint: disable=no-member
+    if resp.status_code != requests.codes.created:  # pylint: disable=no-member
         print("Failed to update commit status [HTTP %d]" % resp.status_code)
         print(resp.headers)
         print(resp.json())
         return False
 
     return True
+
 
 if __name__ == '__main__':
     sys.exit(main())
