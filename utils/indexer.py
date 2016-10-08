@@ -25,9 +25,10 @@ Recursively create index.html file listings for
 directories that do not have any.
 """
 
+import jinja2
+
 from os import getcwd, listdir
-from os.path import isfile, isdir, join
-from cgi import escape
+from os.path import dirname, isfile, isdir, join, realpath
 
 
 def get_index(dirpath):
@@ -41,43 +42,32 @@ def get_index(dirpath):
 
 def create_index(dirpath, at_top):
     "Creates a new index.html file"
+
     # get children
-    names = []
+    files = {}
     for name in listdir(dirpath):
         if isdir(join(dirpath, name)):
             name = name + '/'
-        names.append(name)
+        files[name] = name
+        path = join(dirpath, name)
 
-    with open(join(dirpath, "index.html"), 'w') as f:
+        # link to the index.html of the child
+        if isdir(path):
+            index = get_index(join(dirpath, name))
+            if index is None:
+                index = 'index.html'
+            files[name] = name + index
 
-        # write header
-        f.write("<html><head><title>Listing</title></head><body>\n")
+    tpl_fname = dirname(realpath(__file__)) + '/index.j2'
+    # Render the template to index.html
+    with open(tpl_fname, 'r') as tplf:
+        tpl = jinja2.Template(
+            tplf.read(),
+            extensions=['jinja2.ext.i18n'],
+            autoescape=True)
 
-        n = len(names)
-        f.write("%d entr%s<br><br>\n" % (n, "y" if n == 1 else "ies"))
-
-        # let's be nice and give a link back to our parent
-        if not at_top:
-            f.write('<a href="../index.html">..</a><br>\n')
-
-        for name in names:
-            link = name
-            path = join(dirpath, name)
-
-            # link to the index.html of the child
-            if isdir(path):
-                index = get_index(join(dirpath, name))
-                if index is None:
-                    index = 'index.html'
-                link = link + index
-
-            # escape everything for safety
-            link = escape(link)
-            name = escape(name)
-
-            f.write('<a href="{0}">{1}</a><br>\n'.format(link, name))
-
-        f.write("</body></html>")
+        with open(join(dirpath, "index.html"), 'w') as f:
+            f.write(tpl.render(files=files, at_top=at_top))
 
 
 def recurse(dirpath):

@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <title>Listing</title>
+  </head>
+<body>
+{% if files|length > 1 %}
+  {{ files|length }} entries<br><br>
+{% else %}
+  {{ files|length }} entry<br><br>
+{% endif %}
+  <ul>
+{%- if not at_top %}<li><a href="../index.html">..</a></li>{% endif -%}
+{% for name, link in files|dictsort -%}
+    <li><a href="{{ link }}">{{ name }}</a></li>
+{% endfor %}
+  </ul>
+  </body>
+</html>
