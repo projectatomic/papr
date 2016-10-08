@@ -8,6 +8,8 @@ prefixed by 'env:' to denote a lookup in an environment
 variable. E.g. --token env:token.
 """
 
+from __future__ import print_function
+
 import os
 import sys
 import json
@@ -57,7 +59,7 @@ def parse_args():
                 new_val = os.environ.get(val[4:])
                 if new_val is None and arg in required_args:
                     parser.error(
-                        "Parameter '%s' is required, but the given"
+                        "Parameter '%s' is required, but the given "
                         "environment variable '%s' is missing." % (
                             arg, val[4:]))
                 setattr(args, arg, new_val)
@@ -66,7 +68,7 @@ def parse_args():
             elif val == "":
                 if arg in required_args:
                     parser.error(
-                        "Parameter '%s' is required, but the given"
+                        "Parameter '%s' is required, but the given "
                         "argument is empty." % arg)
                 setattr(args, arg, None)
 
