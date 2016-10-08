@@ -385,7 +385,7 @@ prep_artifacts() {
                 path="state/cnt/checkout/$artifact"
                 if sudo [ -e "$path" ]; then
                     sudo chown -R $UID:$UID $path
-                    cp -r $path $upload_dir/artifacts
+                    cp -r "$path" $upload_dir/artifacts
                 fi
             done <<< "$artifacts"
         fi
@@ -499,7 +499,7 @@ update_github() {
 
     if [ -z "${github_token:-}" ]; then
         echo "No github_token defined, punting on GitHub commit status update:"
-        echo "$github_repo $github_commit $state $context $description $url"
+        echo $github_repo $github_commit $state "$context" "$description" "$url"
         return
     fi
 
