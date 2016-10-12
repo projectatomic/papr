@@ -36,6 +36,12 @@ else:
     print("ERROR: Missing both 'host' and 'container' entries in YAML.")
     exit(1)
 
+if 'extra-repos' in yml:
+    for repo in yml['extra-repos']:
+        if 'name' not in repo:
+            print("ERROR: Missing 'name' key in an extra repo in YAML.")
+            exit(1)
+
 if 'host' in yml:
     write_to_file("distro", yml['host']['distro'])
 if 'container' in yml:
