@@ -209,7 +209,7 @@ on_atomic_host() {
 ssh_wait() {
     local node_addr=$(cat state/node_addr)
 
-    timeout 60s "$THIS_DIR/utils/sshwait" $node_addr
+    timeout 120s "$THIS_DIR/utils/sshwait" $node_addr
 
     # XXX: The timeout method below will fail on rare
     # occasions in strange ways (the vmssh in the loop
