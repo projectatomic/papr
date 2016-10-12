@@ -43,7 +43,23 @@ if 'extra-repos' in yml:
             exit(1)
 
 if 'host' in yml:
-    write_to_file("distro", yml['host']['distro'])
+    host = yml['host']
+    if 'ostree' in host:
+        val = host['ostree']
+        if type(val) is str: # latest
+            if val != "latest":
+                print("ERROR: Invalid value '%s' for 'ostree' in YAML." % val)
+                exit(1)
+            write_to_file("ostree_revision", "")
+        elif type(val) is dict:
+            write_to_file("ostree_remote", val.get('remote', ''))
+            write_to_file("ostree_branch", val.get('branch', ''))
+            write_to_file("ostree_revision", val.get('revision', ''))
+        else:
+            print("ERROR: Expected str or dict for 'ostree' in YAML.")
+            exit(1)
+    write_to_file("distro", host['distro'])
+
 if 'container' in yml:
     write_to_file("image", yml['container']['image'])
 write_to_file("tests", '\n'.join(yml['tests']))

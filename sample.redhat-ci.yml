@@ -14,7 +14,28 @@ host:
     #   - fedora/24/atomic
     #   - centos/7/cloud
     #   - centos/7/atomic
-    distro: fedora/24/cloud
+    distro: centos/7/atomic
+
+    # OPTIONAL
+    # If using an Atomic Host variant, you can specify which
+    # ostree to use. To use the latest tree on the current
+    # branch, use:
+    ostree: latest
+
+    # Otherwise, you may specify a tree by providing a dict:
+    ostree:
+      # OPTIONAL
+      # Specify the remote to which to rebase. If omitted,
+      # the current remote is used.
+      remote: http://example.com/remote/repo
+      # OPTIONAL
+      # Specify the branch to which to rebase. If omitted,
+      # the current branch is used.
+      branch: my/branch
+      # OPTIONAL
+      # Specify the version or checksum to deploy. If
+      # omitted, the latest commit is used.
+      revision: 7.145.42
 
 # REQUIRED (one of 'host' or 'container')
 container:

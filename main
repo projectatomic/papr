@@ -159,6 +159,14 @@ provision_node() {
 
     ssh_wait
 
+    if [ -f state/parsed/ostree_revision ]; then
+        if ! on_atomic_host; then
+            update_github failure "ERROR: Cannot specify 'ostree' on non-AH."
+            exit 0
+        fi
+        deploy_ostree
+    fi
+
     push_repo
 
     inject_yum_repos
@@ -182,6 +190,12 @@ vmscp() {
         -o StrictHostKeyChecking=no \
         -o PasswordAuthentication=no \
         -o UserKnownHostsFile=/dev/null "$@"
+}
+
+vmreboot() {
+    vmssh systemctl reboot || :
+    sleep 3 # give time for port to go down
+    ssh_wait
 }
 
 ssh_wait() {
@@ -280,6 +294,42 @@ inject_yum_repos() {
     fi
 
     vmscp state/parsed/rhci-extras.repo root@$node_addr:/etc/yum.repos.d
+}
+
+deploy_ostree() {
+    local remote=$(cat state/parsed/ostree_remote)
+    local branch=$(cat state/parsed/ostree_branch)
+    local revision=$(cat state/parsed/ostree_revision)
+
+    if [ -z "$remote" ] && [ -z "$branch" ]; then
+        if [ -z "$revision" ]; then
+            vmssh rpm-ostree upgrade
+        else
+            vmssh rpm-ostree deploy "$revision"
+        fi
+    else
+        local refspec
+
+        if [ -n "$remote" ]; then
+            vmssh ostree remote add --no-gpg-verify rhci "$remote"
+            refspec=rhci:
+        fi
+
+        if [ -n "$branch" ]; then
+            refspec="${refspec}$branch"
+        fi
+
+        vmssh rpm-ostree rebase "$refspec"
+
+        if [ -n "$revision" ]; then
+            # we should really be able to do this in a single step
+            # https://github.com/projectatomic/rpm-ostree/issues/212
+            vmreboot
+            vmssh rpm-ostree deploy "$revision"
+        fi
+    fi
+
+    vmreboot
 }
 
 run_tests() {
