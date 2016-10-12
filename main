@@ -15,6 +15,12 @@ main() {
     # inside the function... Yet another reason to port this
     # to Python.
 
+    # NB2: if you need to change directory, do it in a
+    # subshell.
+
+    # NB3: the use of eval is strictly forbidden. Never
+    # directly run a user-provided variable.
+
     # we keep everything non-reusable for this run in state/
     rm -rf state && mkdir state
 
@@ -467,9 +473,8 @@ prep_artifacts() {
         fi
 
         local indexer=$(realpath $THIS_DIR/utils/indexer.py)
-        pushd $upload_dir
-        python $indexer
-        popd
+        # don't change directory in current session
+        ( cd $upload_dir && python $indexer )
 
         # we're gonna link to the index file
         local s3_object="index.html"
