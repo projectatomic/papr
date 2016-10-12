@@ -34,7 +34,7 @@ main() {
     parse_yml
 
     # should we even be running?
-    if [ -n "${github_branch:-}" ]; then
+    if [ -n "${github_branch:-}" ] && [ -z "${RHCI_DEBUG_ALWAYS_RUN:-}" ]; then
         if ! grep -q $github_branch state/parsed/branches; then
             echo "INFO: Not defined to run for branch '$github_branch'."
             exit 0
@@ -466,7 +466,9 @@ teardown_node() {
 }
 
 ensure_teardown_node() {
-    trap teardown_node EXIT
+    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+        trap teardown_node EXIT
+    fi
 }
 
 containerized() {
