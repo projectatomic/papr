@@ -167,6 +167,10 @@ provision_node() {
         deploy_ostree
     fi
 
+    if [ -f state/parsed/packages ] && on_atomic_host; then
+        overlay_packages
+    fi
+
     push_repo
 
     inject_yum_repos
@@ -196,6 +200,10 @@ vmreboot() {
     vmssh systemctl reboot || :
     sleep 3 # give time for port to go down
     ssh_wait
+}
+
+on_atomic_host() {
+    vmssh test -f /run/ostree-booted
 }
 
 ssh_wait() {
@@ -275,7 +283,7 @@ gen_worker_script() {
     append "set -xeuo pipefail"
     append
 
-    if [ -f state/parsed/packages ]; then
+    if ! on_atomic_host && [ -f state/parsed/packages ]; then
         append yum install -y "$(cat state/parsed/packages)"
     fi
 
@@ -327,6 +335,24 @@ deploy_ostree() {
             vmreboot
             vmssh rpm-ostree deploy "$revision"
         fi
+    fi
+
+    vmreboot
+}
+
+overlay_packages() {
+
+    # do a prelim check to be more helpful
+    for pkg in $(cat state/parsed/packages); do
+        if vmssh rpm -q "$pkg"; then
+            update_github failure "ERROR: Package '$pkg' is already installed."
+            exit 0
+        fi
+    done
+
+    if ! vmssh rpm-ostree install $(cat state/parsed/packages); then
+        update_github failure "ERROR: Could not layer packages."
+        exit 0
     fi
 
     vmreboot

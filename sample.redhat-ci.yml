@@ -67,7 +67,9 @@ extra-repos:
       gpgcheck: 0
 
 # OPTIONAL
-# List of packages to install during provisioning.
+# List of packages to install during provisioning. If
+# running on an Atomic Host variant, packages will be
+# layered.
 packages:
     - make
     - gcc
