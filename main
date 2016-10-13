@@ -488,7 +488,11 @@ prep_artifacts() {
 
         local full_prefix=$s3_prefix/$github_repo/$(basename $upload_dir)
 
-        aws s3 sync $upload_dir s3://$full_prefix
+        # upload logs separately so that we can set the MIME type properly
+        aws s3 sync --exclude '*.log' \
+            $upload_dir s3://$full_prefix
+        aws s3 sync --exclude '*' --include '*.log' --content-type text/plain \
+            $upload_dir s3://$full_prefix
 
         # full address we'll use for the final commit status update
         printf "https://s3.amazonaws.com/%s/%s" \
