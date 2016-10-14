@@ -208,10 +208,6 @@ vmreboot() {
     ssh_wait
 }
 
-on_atomic_host() {
-    vmssh test -f /run/ostree-booted
-}
-
 ssh_wait() {
     local node_addr=$(cat state/node_addr)
 
@@ -569,6 +565,10 @@ ensure_teardown_node() {
 
 containerized() {
     [ -f state/parsed/image ]
+}
+
+on_atomic_host() {
+    ! containerized && vmssh test -f /run/ostree-booted
 }
 
 # Send a commit status update to GitHub
