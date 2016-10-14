@@ -428,8 +428,10 @@ run_tests() {
                 -v $mnt/rhci-extras.repo:/etc/yum.repos.d/rhci-extras.repo:z \
                 "$(cat state/parsed/image)" sh -c "sh worker.sh 2>&1" | \
             tee -a $upload_dir/output.txt || rc=$?
-        if [ -f state/cid ]; then
-            # kill if it's not already dead
+
+        if [ -f state/cid ] \
+              && sudo docker inspect $(cat state/cid) &>/dev/null; then
+            # ignore errors in case of TOCTOU race
             sudo docker kill $(cat state/cid) || :
         fi
     fi
