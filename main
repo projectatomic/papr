@@ -372,8 +372,6 @@ overlay_packages() {
 }
 
 run_tests() {
-    local node_addr=$(cat state/node_addr)
-
     echo $RANDOM > state/random
     local upload_dir=state/$github_commit.$(cat state/random)
     mkdir $upload_dir
@@ -403,6 +401,8 @@ run_tests() {
     local timeout=$(cat state/parsed/timeout)
 
     if ! containerized; then
+        local node_addr=$(cat state/node_addr)
+
         timeout --kill-after=30s "$timeout" \
             ssh -q -o StrictHostKeyChecking=no \
                    -o UserKnownHostsFile=/dev/null \
