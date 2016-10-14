@@ -438,7 +438,6 @@ run_tests() {
 }
 
 prep_artifacts() {
-    local node_addr=$(cat state/node_addr)
     local upload_dir=state/$github_commit.$(cat state/random)
 
     # let's pull back the artifacts
@@ -451,6 +450,7 @@ prep_artifacts() {
         mkdir $upload_dir/artifacts
 
         if ! containerized; then
+            local node_addr=$(cat state/node_addr)
 
             # So apparently the rsync in RHEL/Centos 7 is too
             # old to have --ignore-missing-args, which would be
