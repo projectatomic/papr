@@ -1,8 +1,15 @@
-This repo contains scripts and files used for CI testing of
-some Project Atomic repositories. The testing environment
-and procedure is defined by a `.redhat-ci.yml` file located
-in the project repository. A sample YAML file with allowed
-keys can be found [here](sample.redhat-ci.yml).
+### redhat-ci
+
+`redhat-ci` is a simple framework currently in use for CI
+testing some Project Atomic repositories. It is similar in
+workflow to Travis CI, but has an emphasis on enabling test
+environments useful for the Project Atomic effort.
+
+Configured projects have a `.redhat-ci.yml` file located in
+their repositories, detailing how to provision the
+environment and which tests should be run. A sample YAML
+file with allowed keys can be found
+[here](sample.redhat-ci.yml).
 
 Projects currently monitored are:
 
@@ -67,7 +74,7 @@ uploading artifacts to S3:
 The `main` script integrates nicely in Jenkins, though it
 can be run locally, which is useful for testing. The easiest
 way to get started is to run inside a Python virtualenv with
-the python-novaclient and awscli packages installed (the
+python-novaclient, PyYAML, jinja2, and awscli installed (the
 latter only being required if artifact uploading is wanted).
 Docker is also expected to be up and running for
 containerized tests.
