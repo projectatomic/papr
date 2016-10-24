@@ -5,8 +5,10 @@
 # integrate pieces of the pipeline in here. E.g.
 # provisioning, prereqs, test runs, etc...
 
+import re
 import os
 import yaml
+import shlex
 import argparse
 
 
@@ -160,6 +162,16 @@ def flush_suite(suite, outdir):
 
     if 'artifacts' in suite:
         write_to_file("artifacts", '\n'.join(suite['artifacts']))
+
+    if 'env' in suite:
+        envs = ''
+        for k, v in suite['env'].items():
+            # let's be extra careful since runners will source this directly
+            if re.match('[a-zA-Z_][a-zA-Z0-9_]*', k) is None:
+                raise SyntaxError("invalid env var name '%s'" % k)
+            v = shlex.quote(v)
+            envs += '%s=%s\n' % (k, v)
+        write_to_file("envs", envs)
 
 
 # http://stackoverflow.com/a/39596504/308136

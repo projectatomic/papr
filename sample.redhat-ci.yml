@@ -77,6 +77,12 @@ packages:
     - make
     - gcc
 
+# OPTIONAL
+# Environment variables to define for test procedure.
+env:
+    VAR1: val1
+    VAR2: val2
+
 # REQUIRED
 # Put the tasks to be executed in the 'tests' key. They are
 # run from the root of the repo.
@@ -128,3 +134,6 @@ packages:
     - make
     - gcc
     - autoconf
+
+env:
+  VAR1: newval1

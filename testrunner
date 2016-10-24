@@ -227,13 +227,18 @@ gen_worker_script() {
     append "set -xeuo pipefail"
     append
 
+    # on AH, we layer packages during provisioning
     if ! on_atomic_host && [ -f $state/parsed/packages ]; then
         append yum install -y "$(cat $state/parsed/packages)"
     fi
 
+    if [ -f $state/parsed/envs ]; then
+        cat $state/parsed/envs >> $state/worker.sh
+    fi
+
     append cd checkout
 
-    append "$(cat $state/parsed/tests)"
+    cat $state/parsed/tests >> $state/worker.sh
 
     unset -f append
 }
