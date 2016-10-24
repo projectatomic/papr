@@ -6,13 +6,13 @@ RUN dnf install -y \
 		gcc \
 		sudo \
 		docker \
-		python-devel \
+		python3-devel \
 		redhat-rpm-config \
-		python-pip \
+		python3-pip \
 		nmap-ncat && \
 	dnf clean all
 
-RUN pip install \
+RUN pip3 install \
 		python-novaclient \
 		awscli \
 		PyYAML \
