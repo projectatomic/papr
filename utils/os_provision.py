@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script is not meant to be run manually. It is called
 # from the main script.
@@ -43,19 +43,22 @@ network = nova.networks.find(label=os.environ['os_network'])
 
 # if BUILD_ID is defined, let's add it so that it's easy to
 # trace back a node to the exact Jenkins build.
-meta=None
+meta = None
 if 'BUILD_ID' in os.environ:
-    meta = { 'BUILD_ID': os.environ['BUILD_ID'] }
+    meta = {'BUILD_ID': os.environ['BUILD_ID']}
 
 print("INFO: reading user-data file '%s'" % os.environ['os_user_data'])
 with open(os.environ['os_user_data']) as f:
     userdata = f.read()
 
+
 def gen_name():
     return "%s-%s" % (os.environ['os_name_prefix'], uuid.uuid4().hex[:8])
 
+
 def server_exists(name):
     return len(nova.servers.findall(name=name)) > 0
+
 
 max_tries = 10
 name = gen_name()
@@ -72,9 +75,10 @@ server = nova.servers.create(name, meta=meta, image=image, userdata=userdata,
                              flavor=flavor, key_name=os.environ['os_keyname'],
                              nics=[{'net-id': network.id}])
 
+
 def write_to_file(fn, s):
     with open(os.path.join(output_dir, fn), 'w') as f:
-        f.write(s);
+        f.write(s)
 
 write_to_file('node_name', name)
 

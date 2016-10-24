@@ -49,6 +49,8 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e AWS_ACCESS_KEY_ID \
              -e AWS_SECRET_ACCESS_KEY \
              -e BUILD_ID \
+             -e RHCI_DEBUG_NO_TEARDOWN \
+             -e RHCI_DEBUG_ALWAYS_RUN \
              \${OPT1} \
              \${IMAGE}"
 

@@ -14,6 +14,9 @@ host:
     #   - fedora/24/atomic
     #   - centos/7/cloud
     #   - centos/7/atomic
+    #   - centos/7/atomic/alpha
+    #   - rhel/7/atomic
+    #   - rhel/7/atomic/stage
     distro: centos/7/atomic
 
     # OPTIONAL
@@ -92,3 +95,36 @@ timeout: 30m
 # List of files/directories to upload to Amazon S3.
 artifacts:
     - test-suite.log
+
+---
+
+# It is possible to specify multiple testsuites by starting
+# a second document. All the same fields are supported,
+# though the 'context' key must be different.
+
+# OPTIONAL
+# Start off by inheriting all the keys from the previous
+# document. You may then override keys by simply redefining
+# them. At least the 'context' key must be overridden. If
+# omitted, defaults to false.
+inherit: true
+
+# REQUIRED
+# A distinct context must be used here.
+context: 'My other testsuite'
+
+# To unset an inherited key, simply leave off its value.
+artifacts:
+
+# As a convenience, specifying 'host' automatically unsets
+# 'container' if it was inherited (and vice-versa), so that
+# there is no need to explicitly unset it.
+host:
+  distro: fedora/24/atomic
+
+# There is no support to append to an inherited list. You
+# must redefine them as needed.
+packages:
+    - make
+    - gcc
+    - autoconf

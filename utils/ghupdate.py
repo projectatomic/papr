@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 """
 Small utility to facilitate updating GitHub commit CI
 status: https://developer.github.com/v3/repos/statuses/
@@ -8,8 +9,6 @@ prefixed by 'env:' to denote a lookup in an environment
 variable. E.g. --token env:token.
 """
 
-from __future__ import print_function
-
 import os
 import sys
 import json
@@ -17,26 +16,15 @@ import argparse
 import requests
 
 
-def main():
+def _main():
     "Main entry point."
 
-    args = parse_args()
-    if args is None:
-        return 1
-
-    data = craft_data_dict(args.state,
-                           args.context,
-                           args.description,
-                           args.url)
-
-    if not update_status(args.repo,
-                         args.commit,
-                         args.token,
-                         data):
-        return 1
+    args = _parse_args()
+    send(args.repo, args.commit, args.token, args.state,
+         args.context, args.description, args.url)
 
 
-def parse_args():
+def _parse_args():
     """
     Parses program arguments and optionally resolves
     pointers to environment variables.
@@ -75,7 +63,12 @@ def parse_args():
     return args
 
 
-def craft_data_dict(state, context, description, url):
+def send(repo, commit, token, state, context=None, description=None, url=None):
+    data = _craft_data_dict(state, context, description, url)
+    _update_status(repo, commit, token, data)
+
+
+def _craft_data_dict(state, context, description, url):
     "Creates the data dictionary as required by the API."
 
     data = {'state': state}
@@ -88,26 +81,25 @@ def craft_data_dict(state, context, description, url):
     return data
 
 
-def update_status(repo, commit, token, data):
+def _update_status(repo, commit, token, data):
     "Sends the status update's data using the GitHub API."
 
     token_header = {'Authorization': 'token ' + token}
     api_url = ("https://api.github.com/repos/%s/statuses/%s" %
                (repo, commit))
 
-    print("Updating status of commit", commit, "with data", data)
+    if __name__ == '__main__':
+        print("Updating status of commit", commit, "with data", data)
 
     # use data= instead of json= in case we're running on an older requests
     resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
 
     if resp.status_code != requests.codes.created:  # pylint: disable=no-member
-        print("Failed to update commit status [HTTP %d]" % resp.status_code)
-        print(resp.headers)
-        print(resp.json())
-        return False
-
-    return True
+        errmsg = "Failed to update commit status [HTTP %d]" % resp.status_code
+        errmsg += "\n" + str(resp.headers)
+        errmsg += "\n" + str(resp.json())
+        raise Exception(errmsg)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(_main())
