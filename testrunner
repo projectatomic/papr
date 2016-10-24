@@ -258,11 +258,21 @@ deploy_ostree() {
     local branch=$(cat $state/parsed/ostree_branch)
     local revision=$(cat $state/parsed/ostree_revision)
 
+    skip_reboot=0
     if [ -z "$remote" ] && [ -z "$branch" ]; then
+
+        rc=0
         if [ -z "$revision" ]; then
-            vmssh rpm-ostree upgrade
+            vmssh rpm-ostree upgrade --upgrade-unchanged-exit-77 || rc=$?
         else
-            vmssh rpm-ostree deploy "$revision"
+            vmssh rpm-ostree deploy "$revision" || rc=$?
+        fi
+
+        if [ $rc == 77 ]; then
+            skip_reboot=1
+        elif [ $rc != 0 ]; then
+            update_github failure "ERROR: Failed to upgrade or deploy."
+            exit 0
         fi
     else
         local refspec
@@ -282,11 +292,20 @@ deploy_ostree() {
             # we should really be able to do this in a single step
             # https://github.com/projectatomic/rpm-ostree/issues/212
             vmreboot
-            vmssh rpm-ostree deploy "$revision"
+            vmssh rpm-ostree deploy "$revision" || rc=$?
+
+            if [ $rc == 77 ]; then
+                skip_reboot=1
+            elif [ $rc != 0 ]; then
+                update_github failure "ERROR: Failed to upgrade or deploy."
+                exit 0
+            fi
         fi
     fi
 
-    vmreboot
+    if [ $skip_reboot != 1 ]; then
+        vmreboot
+    fi
 }
 
 overlay_packages() {
