@@ -445,7 +445,7 @@ prep_artifacts() {
 
         local indexer=$(realpath $THIS_DIR/utils/indexer.py)
         # don't change directory in current session
-        ( cd $upload_dir && python $indexer )
+        ( cd $upload_dir && $indexer )
 
         # we're gonna link to the index file
         local s3_object="index.html"
