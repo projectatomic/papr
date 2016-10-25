@@ -26,6 +26,7 @@ def main():
         update_gh('error', msg)
     else:
         spawn_testrunners(n)
+        count_failures(n)
 
 
 def parse_suites():
@@ -66,6 +67,23 @@ def spawn_testrunners(n):
     # rc != 0.
     if failed:
         raise Exception("at least one runner failed")
+
+
+def count_failures(n):
+
+    # It's helpful to have an easy global way to figure out
+    # if any of the suites failed, e.g. for integration in
+    # Jenkins. Let's write a 'failures' file counting the
+    # number of failed suites.
+
+    failed = 0
+    for i in range(n):
+        with open("state/suite-%d/rc" % i) as f:
+            if int(f.read().strip()) != 0:
+                failed += 1
+
+    with open("state/failures", "w") as f:
+        f.write("%d" % failed)
 
 
 def update_gh(state, description):
