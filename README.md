@@ -18,6 +18,7 @@ Projects currently monitored are:
 - [projectatomic/commissaire-http](https://github.com/projectatomic/commissaire-http)
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
+- [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 
 **If you would like to have a repository added, please open
