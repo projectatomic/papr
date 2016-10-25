@@ -63,10 +63,9 @@ context: 'CI Tester'
 # Additional YUM repositories to inject during provisioning.
 extra-repos:
     - name: my-repo-name # REQUIRED key
-      baseurl: http://example.com/repo
-      gpgcheck: 0
+      baseurl: https://example.com/repo
     - name: my-other-repo-name # REQUIRED key
-      metalink: http://example.com/metalink?repo=mydistro
+      metalink: https://example.com/metalink?repo=mydistro
       gpgcheck: 0
 
 # OPTIONAL
