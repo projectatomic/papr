@@ -54,6 +54,10 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              \${OPT1} \
              \${IMAGE}"
 
+# When run in e.g. Jenkins, it's really annoying to not see
+# any output of e.g. the provisioner until it's all done.
+ENV PYTHONUNBUFFERED 1
+
 COPY . /redhat-ci
 
 CMD ["/redhat-ci/main"]
