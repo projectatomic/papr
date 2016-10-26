@@ -42,11 +42,12 @@ def parse_suites():
     assert os.path.isfile(yml_file)
 
     nsuites = 0
-    target_branch = os.environ['github_branch']
+    branch = os.environ.get('github_branch')
     for idx, suite in enumerate(parser.load_suites(yml_file)):
-        if target_branch not in suite.get('branches', ['master']):
+        branches = suite.get('branches', ['master'])
+        if branch is not None and branch not in branches:
             print("INFO: %s suite not defined to run for branch %s." %
-                  (parser.ordinal(idx + 1), target_branch))
+                  (parser.ordinal(idx + 1), branch))
             continue
         suite_dir = 'state/suite-%d/parsed' % nsuites
         parser.flush_suite(suite, suite_dir)
