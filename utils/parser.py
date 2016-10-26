@@ -28,7 +28,7 @@ def load_suites(filepath):
                 # exact error directly
                 if idx == 0:
                     raise e
-                msg = "failed to parse %s testsuite" % _ordinal(idx + 1)
+                msg = "failed to parse %s testsuite" % ordinal(idx + 1)
                 raise SyntaxError(msg) from e
 
 
@@ -175,7 +175,8 @@ def flush_suite(suite, outdir):
 
 
 # http://stackoverflow.com/a/39596504/308136
-def _ordinal(n):
+# XXX: move to a generic util module
+def ordinal(n):
     suffix = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th']
     if n < 0:
         n *= -1

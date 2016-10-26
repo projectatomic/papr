@@ -25,8 +25,11 @@ def main():
             msg += ": " + e.__cause__.msg
         update_gh('error', msg)
     else:
-        spawn_testrunners(n)
-        count_failures(n)
+        if n > 0:
+            spawn_testrunners(n)
+            count_failures(n)
+        else:
+            print("INFO: No testsuites to run.")
 
 
 def parse_suites():
@@ -38,12 +41,19 @@ def parse_suites():
     # this should have been checked already
     assert os.path.isfile(yml_file)
 
+    nsuites = 0
+    target_branch = os.environ['github_branch']
     for idx, suite in enumerate(parser.load_suites(yml_file)):
-        suite_dir = 'state/suite-%d/parsed' % idx
+        if target_branch not in suite.get('branches', ['master']):
+            print("INFO: %s suite not defined to run for branch %s." %
+                  (parser.ordinal(idx + 1), target_branch))
+            continue
+        suite_dir = 'state/suite-%d/parsed' % nsuites
         parser.flush_suite(suite, suite_dir)
+        nsuites += 1
 
     # return the number of testsuites
-    return idx + 1
+    return nsuites
 
 
 def spawn_testrunners(n):

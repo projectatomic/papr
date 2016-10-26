@@ -34,14 +34,6 @@ main() {
     # We also do a GitHub update on clean exit.
     ensure_err_github_update
 
-    # should we even be running?
-    if [ -n "${github_branch:-}" ] && [ -z "${RHCI_DEBUG_ALWAYS_RUN:-}" ]; then
-        if ! grep -q $github_branch $state/parsed/branches; then
-            echo "INFO: Not defined to run for branch '$github_branch'."
-            exit 0
-        fi
-    fi
-
     provision_env
 
     run_tests
