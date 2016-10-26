@@ -78,9 +78,16 @@ def count_failures(n):
 
     failed = 0
     for i in range(n):
-        with open("state/suite-%d/rc" % i) as f:
-            if int(f.read().strip()) != 0:
-                failed += 1
+        # If the rc file doesn't exist but the runner exited
+        # nicely, then it means there was a semantic error
+        # in the YAML (e.g. bad Docker image, bad ostree
+        # revision, etc...).
+        if not os.path.isfile("state/suite-%d/rc" % i):
+            failed += 1
+        else:
+            with open("state/suite-%d/rc" % i) as f:
+                if int(f.read().strip()) != 0:
+                    failed += 1
 
     with open("state/failures", "w") as f:
         f.write("%d" % failed)
