@@ -158,7 +158,10 @@ def flush_suite(suite, outdir):
             write_to_file("rhci-extras.repo", repos)
 
     if 'packages' in suite:
-        write_to_file("packages", ' '.join(suite['packages']))
+        packages = []
+        for pkg in suite['packages']:
+            packages.append(shlex.quote(pkg))
+        write_to_file("packages", ' '.join(packages))
 
     if 'artifacts' in suite:
         write_to_file("artifacts", '\n'.join(suite['artifacts']))
