@@ -15,6 +15,7 @@ host:
     #   - centos/7/cloud
     #   - centos/7/atomic
     #   - centos/7/atomic/alpha
+    #   - centos/7/atomic/continuous
     #   - rhel/7/atomic
     #   - rhel/7/atomic/stage
     distro: centos/7/atomic
