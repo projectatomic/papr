@@ -169,11 +169,10 @@ def flush_suite(suite, outdir):
     if 'env' in suite:
         envs = ''
         for k, v in suite['env'].items():
-            # let's be extra careful since runners will source this directly
             if re.match('[a-zA-Z_][a-zA-Z0-9_]*', k) is None:
                 raise SyntaxError("invalid env var name '%s'" % k)
             v = shlex.quote(v)
-            envs += '%s=%s\n' % (k, v)
+            envs += 'export %s=%s\n' % (k, v)
         write_to_file("envs", envs)
 
 
