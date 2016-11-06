@@ -1,0 +1,47 @@
+extensions:
+  - utils/ext_schema.py
+type: map
+func: ext_testenv
+mapping:
+  host:
+    mapping:
+      distro:
+        type: str
+        required: true
+      ostree:
+        type: any
+        func: ext_ostree
+  container:
+    mapping:
+      image:
+        type: str
+        required: true
+  context:
+    type: str
+    required: true
+  branches:
+    sequence:
+      - type: str
+        unique: true
+  extra-repos:
+    type: any
+    func: ext_repos
+  packages:
+    sequence:
+      - type: str
+        unique: true
+  env:
+    mapping:
+      regex;(^[a-zA-Z_][a-zA-Z0-9_]*$):
+        type: str
+  tests:
+    sequence:
+      - type: str
+    required: true
+  timeout:
+    type: str
+    pattern: '[0-9]+[smh]'
+    func: ext_timeout
+  artifacts:
+    sequence:
+      - type: str

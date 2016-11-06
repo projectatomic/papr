@@ -2,3 +2,4 @@ python-novaclient
 PyYAML
 jinja2
 awscli
+pykwalify

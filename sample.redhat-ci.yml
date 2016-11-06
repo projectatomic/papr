@@ -93,8 +93,9 @@ tests:
     - make installcheck
 
 # OPTIONAL
-# Maximum time to allow for the test. Accepts the same
-# syntax as timeout(1). If omitted, defaults to '2h'.
+# Time to allow before aborting tests. Must satisfy regex
+# '[0-9]+[smh]'. If omitted, defaults to '2h', which is the
+# maximum.
 timeout: 30m
 
 # OPTIONAL
