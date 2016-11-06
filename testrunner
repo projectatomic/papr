@@ -65,7 +65,7 @@ provision_container() {
     # Let's pre-pull the image so that it doesn't count
     # as part of the test timeout.
     if ! sudo docker pull "$image"; then
-        update_github failure "ERROR: Could not pull image '$image'."
+        update_github error "Could not pull image '$image'."
         exit 0
     fi
 
@@ -109,7 +109,7 @@ provision_node() {
 
     if [ -f $state/parsed/ostree_revision ]; then
         if ! on_atomic_host; then
-            update_github failure "ERROR: Cannot specify 'ostree' on non-AH."
+            update_github error "Cannot specify 'ostree' on non-AH."
             exit 0
         fi
         deploy_ostree
@@ -263,7 +263,7 @@ deploy_ostree() {
         if [ $rc == 77 ]; then
             skip_reboot=1
         elif [ $rc != 0 ]; then
-            update_github failure "ERROR: Failed to upgrade or deploy."
+            update_github error "Failed to upgrade or deploy."
             exit 0
         fi
     else
@@ -289,7 +289,7 @@ deploy_ostree() {
             if [ $rc == 77 ]; then
                 skip_reboot=1
             elif [ $rc != 0 ]; then
-                update_github failure "ERROR: Failed to upgrade or deploy."
+                update_github error "Failed to upgrade or deploy."
                 exit 0
             fi
         fi
@@ -305,13 +305,13 @@ overlay_packages() {
     # do a prelim check to be more helpful
     for pkg in $(cat $state/parsed/packages); do
         if vmssh rpm -q "$pkg"; then
-            update_github failure "ERROR: Package '$pkg' is already installed."
+            update_github error "Package '$pkg' is already installed."
             exit 0
         fi
     done
 
     if ! vmssh rpm-ostree install $(cat $state/parsed/packages); then
-        update_github failure "ERROR: Could not layer packages."
+        update_github error "Could not layer packages."
         exit 0
     fi
 
