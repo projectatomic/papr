@@ -317,8 +317,10 @@ build_and_test() {
             fi
         fi
 
+        local njobs=$(envcmd getconf _NPROCESSORS_ONLN)
+
         echo "./configure $config_opts" >> $state/build.sh
-        echo "make all $build_opts" >> $state/build.sh
+        echo "make all --jobs $njobs $build_opts" >> $state/build.sh
         echo "make install $install_opts" >> $state/build.sh
 
         local max_date=$(($(date +%s) + $timeout))

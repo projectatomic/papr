@@ -95,12 +95,11 @@ build:
     # OPTIONAL
     # Customize the configuration step.
     config-opts: >
-        --prefix=/usr
-        --libdir=/usr/lib64
-        CFLAGS='-ggdb -O0'
+        --enable-systemd
+        CFLAGS='-fsanitize=undefined'
     # OPTIONAL
     # Customize the build step.
-    build-opts: -j4
+    build-opts: MYVAR=1
     # OPTIONAL
     # Customize the install step.
     install-opts: DESTDIR=$PWD/install
