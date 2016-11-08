@@ -45,6 +45,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e BUILD_ID \
              -e RHCI_DEBUG_NO_TEARDOWN \
              -e RHCI_DEBUG_ALWAYS_RUN \
+             -e RHCI_DEBUG_USE_NODE \
              \${OPT1} \
              \${IMAGE}"
 
