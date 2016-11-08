@@ -36,25 +36,23 @@ main() {
 
     provision_env
 
+    prepare_env
+
     run_tests
 
-    prep_artifacts
+    fetch_artifacts
+
+    s3_upload
 
     final_github_update
 }
 
 provision_env() {
-
     if containerized; then
-
+        ensure_teardown_container
         provision_container
-
     else
-
-        # Before we even provision, let's make sure we will
-        # teardown at exit time.
         ensure_teardown_node
-
         provision_node
     fi
 }
@@ -69,21 +67,9 @@ provision_container() {
         exit 0
     fi
 
-    # Everything that will be bind-mounted goes there.
-    mkdir $state/cnt
-
-    cp -a checkouts/$github_repo $state/cnt/checkout
-
-    # let's just make it always exist so we don't have to
-    # use eval during docker run
-    touch $state/cnt/rhci-extras.repo
-    if [ -f $state/parsed/rhci-extras.repo ]; then
-        cp $state/parsed/rhci-extras.repo $state/cnt
-    fi
-
-    gen_worker_script
-
-    cp $state/worker.sh $state/cnt
+    sudo docker run -d \
+        --cidfile $state/cid \
+        "$image" sleep infinity
 }
 
 provision_node() {
@@ -93,15 +79,21 @@ provision_node() {
 
     update_github pending "Provisioning test node."
 
-    # XXX: We hardcode m1.small for now, but these really
-    # should be specified indirectly from the .redhat-ci
-    # YAML file through e.g. min-* vars.
-    env \
-        os_image="$image" \
-        os_flavor=m1.small \
-        os_name_prefix=github-ci-testnode \
-        os_user_data="$THIS_DIR/utils/user-data" \
-        "$THIS_DIR/utils/os_provision.py" $state
+    # substitute node to use in "<name>:<ip>" format
+    if [ -n "${RHCI_DEBUG_USE_NODE:-}" ]; then
+        echo "${RHCI_DEBUG_USE_NODE%:*}" > $state/node_name
+        echo "${RHCI_DEBUG_USE_NODE#*:}" > $state/node_addr
+    else
+        # XXX: We hardcode m1.small for now, but these really
+        # should be specified indirectly from the .redhat-ci
+        # YAML file through e.g. min-* vars.
+        env \
+            os_image="$image" \
+            os_flavor=m1.small \
+            os_name_prefix=github-ci-testnode \
+            os_user_data="$THIS_DIR/utils/user-data" \
+            "$THIS_DIR/utils/os_provision.py" $state
+    fi
 
     ssh_setup_key
 
@@ -114,19 +106,29 @@ provision_node() {
         fi
         deploy_ostree
     fi
+}
 
-    if [ -f $state/parsed/packages ] && on_atomic_host; then
-        overlay_packages
+prepare_env() {
+    local upload_dir=$state/$github_commit.$state_idx.$RANDOM
+    echo $upload_dir > $state/upload_dir
+    mkdir $upload_dir
+
+    # inject extra repos before installing packages
+    if [ -f $state/parsed/rhci-extras.repo ]; then
+        envcmd mkdir -p /etc/yum.repos.d
+        envcp $state/parsed/rhci-extras.repo /etc/yum.repos.d
     fi
 
-    push_repo
+    if [ -f $state/parsed/packages ]; then
+        if on_atomic_host; then
+            overlay_packages
+        else
+            install_packages
+        fi
+    fi
 
-    inject_yum_repos
-
-    gen_worker_script
-
-    # push it out to the node
-    vmscp $state/worker.sh root@$(cat $state/node_addr):/root
+    envcmd mkdir /var/tmp/checkout
+    envcp checkouts/$github_repo/. /var/tmp/checkout
 }
 
 ssh_setup_key() {
@@ -134,27 +136,6 @@ ssh_setup_key() {
     cat > $state/node_key <<< "$os_privkey"
     chmod 0600 $state/node_key
     set -x
-}
-
-vmssh() {
-    ssh -q -i $state/node_key \
-        -o StrictHostKeyChecking=no \
-        -o PasswordAuthentication=no \
-        -o UserKnownHostsFile=/dev/null \
-        root@$(cat $state/node_addr) "$@"
-}
-
-vmscp() {
-    scp -q -i $state/node_key \
-        -o StrictHostKeyChecking=no \
-        -o PasswordAuthentication=no \
-        -o UserKnownHostsFile=/dev/null "$@"
-}
-
-vmreboot() {
-    vmssh systemctl reboot || :
-    sleep 3 # give time for port to go down
-    ssh_wait
 }
 
 ssh_wait() {
@@ -193,56 +174,6 @@ ssh_wait() {
         echo "ERROR: Timed out while waiting for SSH."
         return 1
     fi
-}
-
-push_repo() {
-    local node_addr=$(cat $state/node_addr)
-
-    rsync --quiet -az --no-owner --no-group \
-        -e "ssh -q -i $state/node_key \
-                   -o StrictHostKeyChecking=no \
-                   -o PasswordAuthentication=no \
-                   -o UserKnownHostsFile=/dev/null" \
-        checkouts/$github_repo/ root@$node_addr:/root/checkout/
-}
-
-gen_worker_script() {
-
-    # let's build the worker script that will be executed on the node
-    touch $state/worker.sh
-
-    append() {
-        echo "$@" >> $state/worker.sh
-    }
-
-    append "#!/bin/bash"
-    append "set -xeuo pipefail"
-    append
-
-    # on AH, we layer packages during provisioning
-    if ! on_atomic_host && [ -f $state/parsed/packages ]; then
-        append yum install -y "$(cat $state/parsed/packages)"
-    fi
-
-    if [ -f $state/parsed/envs ]; then
-        cat $state/parsed/envs >> $state/worker.sh
-    fi
-
-    append cd checkout
-
-    cat $state/parsed/tests >> $state/worker.sh
-
-    unset -f append
-}
-
-inject_yum_repos() {
-    local node_addr=$(cat $state/node_addr)
-
-    if [ ! -f $state/parsed/rhci-extras.repo ]; then
-        return 0
-    fi
-
-    vmscp $state/parsed/rhci-extras.repo root@$node_addr:/etc/yum.repos.d
 }
 
 deploy_ostree() {
@@ -301,149 +232,114 @@ deploy_ostree() {
 }
 
 overlay_packages() {
+    local upload_dir=$(cat $state/upload_dir)
 
-    # do a prelim check to be more helpful
-    for pkg in $(cat $state/parsed/packages); do
-        if vmssh rpm -q "$pkg"; then
-            update_github error "Package '$pkg' is already installed."
-            exit 0
-        fi
-    done
+    local rc=0
+    logged_envcmd $upload_dir/setup.log / - - \
+        rpm-ostree install "$(cat $state/parsed/packages)" || rc=$?
 
-    if ! vmssh rpm-ostree install $(cat $state/parsed/packages); then
-        update_github error "Could not layer packages."
+    if [ $rc != 0 ]; then
+        s3_upload
+        update_github error "Could not layer packages." "$(cat $state/url)"
         exit 0
     fi
 
     vmreboot
 }
 
-run_tests() {
-    echo $RANDOM > $state/random
-    local upload_dir=$state/$github_commit.$state_idx.$(cat $state/random)
-    mkdir $upload_dir
+install_packages() {
+    local upload_dir=$(cat $state/upload_dir)
 
-    update_github pending "Running tests."
-
-    # Seed output.txt with useful information
-    echo "### $(date --utc)" > $upload_dir/output.txt
-
-    if [ -n "${github_branch:-}" ]; then
-        echo "### Testing branch $github_branch" >> $upload_dir/output.txt
-    else
-        echo -n "### Testing PR #$github_pull_id" >> $upload_dir/output.txt
-        # NB: is_merge_sha is in the top-level global state dir
-        if [ ! -f state/is_merge_sha ]; then
-            echo " (WARNING: cannot test merge, check for conflicts)" \
-                >> $upload_dir/output.txt
-        else
-            echo >> $upload_dir/output.txt
-        fi
-    fi
-
-    if [ -n "${BUILD_ID:-}" ]; then
-        echo "### BUILD_ID $BUILD_ID" >> $upload_dir/output.txt
+    mgr=yum
+    if envcmd rpm -q dnf; then
+        mgr=dnf
     fi
 
     local rc=0
-    local timeout=$(cat $state/parsed/timeout)
+    logged_envcmd $upload_dir/setup.log / - - \
+        $mgr install -y "$(cat $state/parsed/packages)" || rc=$?
 
-    if ! containerized; then
-        local node_addr=$(cat $state/node_addr)
-
-        timeout --kill-after=30s "$timeout" \
-            ssh -q -i $state/node_key \
-                   -o StrictHostKeyChecking=no \
-                   -o UserKnownHostsFile=/dev/null \
-                   root@$node_addr "sh worker.sh 2>&1" | \
-            tee -a $upload_dir/output.txt || rc=$?
-    else
-        # We need a full path for this
-        local mnt=$(realpath $state/cnt)
-
-        # We use sudo below to make it more convenient for running unprivileged
-        # on dev machines. Though because we use timeout, sudo doesn't have
-        # control of the TTY, so we use it beforehand so it can cache
-        # credentials.
-        sudo true
-
-        # Setting a timeout on docker run is not reliable since it's the daemon
-        # running it. And we don't want to trust the timeout *inside* the
-        # container as well. So we follow up with a docker kill.
-        timeout --kill-after=30s "$timeout" \
-            sudo docker run --rm \
-                --workdir / \
-                --cidfile $state/cid \
-                -v "$mnt/checkout:/checkout:z" \
-                -v "$mnt/worker.sh:/worker.sh:z" \
-                -v "$mnt/rhci-extras.repo:/etc/yum.repos.d/rhci-extras.repo:z" \
-                "$(cat $state/parsed/image)" sh -c "sh worker.sh 2>&1" | \
-            tee -a $upload_dir/output.txt || rc=$?
-
-        if [ -f $state/cid ] \
-              && sudo docker inspect $(cat $state/cid) &>/dev/null; then
-            # ignore errors in case of TOCTOU race
-            sudo docker kill $(cat $state/cid) || :
-        fi
+    if [ $rc != 0 ]; then
+        s3_upload
+        update_github error "Could not install packages." "$(cat $state/url)"
+        exit 0
     fi
+}
+
+run_tests() {
+    local upload_dir=$(cat $state/upload_dir)
+
+    update_github pending "Running tests."
+
+    local rc=0
+
+    max_date=$(($(date +%s) + $(cat $state/parsed/timeout)))
+
+    while IFS='' read -r line || [[ -n $line ]]; do
+
+        local timeout=$(($max_date - $(date +%s)))
+
+        if [ $timeout -le 0 ]; then
+            echo "### TIMED OUT" >> $upload_dir/output.log
+            rc=137
+            break
+        fi
+
+        rc=0
+        logged_envcmd \
+            $upload_dir/output.log /var/tmp/checkout \
+            $state/parsed/envs $timeout "$line" || rc=$?
+
+        if [ $rc != 0 ]; then
+            break
+        fi
+
+    done < $state/parsed/tests
 
     echo "$rc" > $state/rc
 }
 
-prep_artifacts() {
-    local upload_dir=$state/$github_commit.$state_idx.$(cat $state/random)
+fetch_artifacts() {
+    local upload_dir=$(cat $state/upload_dir)
 
     # let's pull back the artifacts
     if [ -f $state/parsed/artifacts ]; then
-
-        # use a variable instead or `read` misses the last non-newline
-        # terminated line
-        local artifacts=$(cat $state/parsed/artifacts)
 
         mkdir $upload_dir/artifacts
 
         if ! containerized; then
             local node_addr=$(cat $state/node_addr)
 
-            # So apparently the rsync in RHEL/Centos 7 is too
-            # old to have --ignore-missing-args, which would be
-            # really handy here. Fun/sad fact: that feature has
-            # been upstream since *2009*. Wow.
-
-            #rsync -raz --quiet --delete-missing-args --no-owner --no-group \
-            #    -e "ssh -q -i $state/node_key \
-            #               -o StrictHostKeyChecking=no \
-            #               -o PasswordAuthentication=no \
-            #               -o UserKnownHostsFile=/dev/null" \
-            #    --files-from=$state/parsed/artifacts \
-            #    root@$node_addr:checkout $upload_dir/artifacts/
-
-            while read artifact; do
-                vmscp -r "root@$node_addr:checkout/$artifact" \
-                    $upload_dir/artifacts || :
-            done <<< "$artifacts"
-        else
-            # NB: We ran as root, so chown in case we're unprivileged. This is
-            # more as a helper for when we do local testing, since we're always
-            # root in the container.
-            while read artifact; do
-                path="$state/cnt/checkout/$artifact"
-                if sudo [ -e "$path" ]; then
-                    sudo chown -R $UID:$UID $path
-                    cp -r "$path" $upload_dir/artifacts
+            while IFS='' read -r artifact || [[ -n $artifact ]]; do
+                path="/var/tmp/checkout/$artifact"
+                if vmssh [ -e "$path" ]; then
+                    vmscp -r "root@$node_addr:$path" $upload_dir/artifacts
                 fi
-            done <<< "$artifacts"
+            done < $state/parsed/artifacts
+        else
+            local cid=$(cat $state/cid)
+            while IFS='' read -r artifact || [[ -n $artifact ]]; do
+                path="/var/tmp/checkout/$artifact"
+                if sudo docker exec $cid [ -e "$path" ]; then
+                    sudo docker cp "$cid:$path" $upload_dir/artifacts
+                fi
+            done < $state/parsed/artifacts
         fi
+    fi
+}
 
-        local indexer=$(realpath $THIS_DIR/utils/indexer.py)
+s3_upload() {
+    local indexer=$(realpath $THIS_DIR/utils/indexer.py)
+    local upload_dir=$(cat $state/upload_dir)
+
+    # if we just have output.log, then just link directly to that
+    if [ -f $upload_dir/output.log ] && \
+       [ $(find $upload_dir -mindepth 1 | wc -l) == 1 ]; then
+        local s3_object=output.log
+    else
         # don't change directory in current session
         ( cd $upload_dir && $indexer )
-
-        # we're gonna link to the index file
-        local s3_object="index.html"
-    else
-        # we'll link directly to the output.txt file
-        local s3_object="output.txt"
+        local s3_object=index.html
     fi
 
     # only actually upload if we're given $s3_prefix
@@ -492,6 +388,151 @@ final_github_update() {
     update_github $ghstate "$desc" "$url"
 }
 
+# $1 -- log file
+# $2 -- workdir
+# $3 -- envfile or -
+# $4 -- timeout or -
+logged_envcmd() {
+    local logfile=$1; shift
+    local workdir=$1; shift
+    local envfile=$1; shift
+    local timeout=$1; shift
+
+    # seed with standard info
+    if [ ! -f $logfile ]; then
+
+        echo "### $(date --utc)" > $logfile
+
+        if [ -n "${github_branch:-}" ]; then
+            echo "### Branch $github_branch" >> $logfile
+        else
+            echo -n "### PR #$github_pull_id" >> $logfile
+            # NB: is_merge_sha is in the top-level global state dir
+            if [ ! -f state/is_merge_sha ]; then
+                echo " (WARNING: not merge sha, check for conflicts)" \
+                    >> $logfile
+            else
+                echo >> $logfile
+            fi
+        fi
+
+        if [ -n "${BUILD_ID:-}" ]; then
+            echo "### BUILD_ID $BUILD_ID" >> $logfile
+        fi
+    fi
+
+    echo '>>>' "$@" >> $logfile
+
+    # we just create a script and run that to make
+    # invocation and redirection easier
+    echo "set -euo pipefail" > $state/worker.sh
+    if [ $envfile != - ] && [ -f $envfile ]; then
+        cat $envfile >> $state/worker.sh
+    fi
+    echo "exec 2>&1" >> $state/worker.sh
+    echo "cd $workdir" >> $state/worker.sh
+    echo "$@" >> $state/worker.sh
+
+    envcp $state/worker.sh /var/tmp
+
+    local start=$(date +%s)
+
+    rc=0
+    timed_envcmd $timeout sh /var/tmp/worker.sh | tee -a $logfile || rc=$?
+
+    local duration=$(($(date +%s) - $start))
+
+    if [ $rc == 0 ]; then
+        echo "### COMPLETED IN ${duration}s" >> $logfile
+    elif [ $rc == 137 ]; then
+        echo "### TIMED OUT AFTER ${duration}s" >> $logfile
+    else
+        echo "### EXITED WITH CODE $rc AFTER ${duration}s" >> $logfile
+    fi
+
+    return $rc
+}
+
+# $1 -- timeout or -
+timed_envcmd() {
+    timeout=$1; shift
+
+    if [[ $timeout == - ]]; then
+        timeout=infinity
+    fi
+
+    # There's a tricky bit to note here, docker exec and ssh
+    # don't handle arguments exactly the same way. SSH will
+    # effectively do a 'sh -c' on the passed command, which
+    # means that quoting might be an issue.
+
+    if containerized; then
+        local cid=$(cat $state/cid)
+        sudo timeout --signal=KILL $timeout \
+            docker exec $cid "$@"
+    else
+        local node_addr=$(cat $state/node_addr)
+        timeout --signal=KILL $timeout \
+            ssh -q -n -i $state/node_key \
+                -o StrictHostKeyChecking=no \
+                -o PasswordAuthentication=no \
+                -o UserKnownHostsFile=/dev/null \
+                root@$(cat $state/node_addr) "$@"
+    fi
+}
+
+envcmd() {
+    timed_envcmd infinity "$@"
+}
+
+envcp() {
+    target=$1; shift
+    remote=$1; shift
+
+    # N.B.: docker cp and rsync have almost the same
+    # semantics, which is nice. One exception is that docker
+    # wants 'dir/.' to signify copying dir contents, whereas
+    # rsync is happy with just 'dir/', so always use '/.'.
+    # Also, rsync creates nonexistent dirs, whereas docker
+    # does not, so explicitly mkdir beforehand.
+
+    if containerized; then
+        local cid=$(cat $state/cid)
+        sudo docker cp $target $cid:$remote
+    else
+        local node_addr=$(cat $state/node_addr)
+        rsync --quiet -az --no-owner --no-group \
+            -e "ssh -q -i $state/node_key \
+                       -o StrictHostKeyChecking=no \
+                       -o PasswordAuthentication=no \
+                       -o UserKnownHostsFile=/dev/null" \
+            $target root@$node_addr:$remote
+    fi
+}
+
+vmssh() {
+    # NB: we use -n because stdin may be in use (e.g. in a
+    # bash while read loop)
+    ssh -q -n -i $state/node_key \
+        -o StrictHostKeyChecking=no \
+        -o PasswordAuthentication=no \
+        -o UserKnownHostsFile=/dev/null \
+        root@$(cat $state/node_addr) "$@"
+}
+
+vmscp() {
+    scp -q -i $state/node_key \
+        -o StrictHostKeyChecking=no \
+        -o PasswordAuthentication=no \
+        -o UserKnownHostsFile=/dev/null "$@"
+}
+
+vmreboot() {
+    vmssh systemctl reboot || :
+    sleep 3 # give time for port to go down
+    ssh_wait
+}
+
 update_github() {
     local context=$(cat $state/parsed/context)
     common_update_github "$context" "$@"
@@ -521,6 +562,18 @@ teardown_node() {
 ensure_teardown_node() {
     if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
         trap teardown_node EXIT
+    fi
+}
+
+teardown_container() {
+    if [ -f $state/cid ]; then
+        sudo docker rm -f $(cat $state/cid)
+    fi
+}
+
+ensure_teardown_container() {
+    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+        trap teardown_container EXIT
     fi
 }
 
