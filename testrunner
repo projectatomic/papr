@@ -255,6 +255,17 @@ install_packages() {
         mgr=dnf
     fi
 
+    # This is hacky and sad. Preemptively try to refresh
+    # yum/dnf cache to work around flaky distro infras.
+
+    local retries=5
+    while [ $retries -gt 0 ]; do
+        if envcmd $mgr makecache; then
+            break
+        fi
+        retries=$((retries - 1))
+    done
+
     local rc=0
     logged_envcmd $upload_dir/setup.log / - - \
         $mgr install -y "$(cat $state/parsed/packages)" || rc=$?
