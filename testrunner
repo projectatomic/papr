@@ -38,7 +38,7 @@ main() {
 
     prepare_env
 
-    run_tests
+    build_and_test
 
     fetch_artifacts
 
@@ -77,7 +77,7 @@ provision_node() {
     # the allowed fields for "distro" are the same as the image name in glance
     local image=$(cat $state/parsed/distro)
 
-    update_github pending "Provisioning test node."
+    update_github pending "Provisioning test node..."
 
     # substitute node to use in "<name>:<ip>" format
     if [ -n "${RHCI_DEBUG_USE_NODE:-}" ]; then
@@ -266,35 +266,89 @@ install_packages() {
     fi
 }
 
-run_tests() {
-    local upload_dir=$(cat $state/upload_dir)
+run_loop() {
+    local timeout=$1; shift
+    local logfile=$1; shift
+    local workdir=$1; shift
+    local testfile=$1; shift
+    local envfile=$1; shift
 
-    update_github pending "Running tests."
-
-    local rc=0
-
-    max_date=$(($(date +%s) + $(cat $state/parsed/timeout)))
-
+    local max_date=$(($(date +%s) + $timeout))
     while IFS='' read -r line || [[ -n $line ]]; do
 
-        local timeout=$(($max_date - $(date +%s)))
-
+        timeout=$(($max_date - $(date +%s)))
         if [ $timeout -le 0 ]; then
-            echo "### TIMED OUT" >> $upload_dir/output.log
+            echo "### TIMED OUT" >> $logfile
             rc=137
             break
         fi
 
         rc=0
-        logged_envcmd \
-            $upload_dir/output.log /var/tmp/checkout \
-            $state/parsed/envs $timeout "$line" || rc=$?
+        logged_envcmd $logfile $workdir $envfile $timeout "$line" || rc=$?
 
         if [ $rc != 0 ]; then
             break
         fi
 
-    done < $state/parsed/tests
+    done < "$testfile"
+
+    return $rc
+}
+
+build_and_test() {
+    local upload_dir=$(cat $state/upload_dir)
+    local timeout=$(cat $state/parsed/timeout)
+    local checkout=checkouts/$github_repo
+    local rc=0
+
+    if [ -f $state/parsed/build ]; then
+        local config_opts=$(cat $state/parsed/build.config_opts)
+        local build_opts=$(cat $state/parsed/build.build_opts)
+        local install_opts=$(cat $state/parsed/build.install_opts)
+
+        update_github pending "Building..."
+
+        touch $state/build.sh
+        if [ ! -f $checkout/configure ]; then
+            if [ -f $checkout/autogen.sh ]; then
+                echo "NOCONFIGURE=1 ./autogen.sh" >> $state/build.sh
+            elif [ -f $checkout/autogen ]; then
+                echo "NOCONFIGURE=1 ./autogen" >> $state/build.sh
+            fi
+        fi
+
+        local njobs=$(envcmd getconf _NPROCESSORS_ONLN)
+
+        echo "./configure $config_opts" >> $state/build.sh
+        echo "make all --jobs $njobs $build_opts" >> $state/build.sh
+        echo "make install $install_opts" >> $state/build.sh
+
+        local max_date=$(($(date +%s) + $timeout))
+
+        rc=0
+        run_loop \
+            $timeout \
+            $upload_dir/build.log \
+            /var/tmp/checkout \
+            $state/build.sh \
+            $state/parsed/envs || rc=$?
+
+        if [ $rc != 0 ]; then
+            echo "$rc" > $state/rc
+            return
+        fi
+
+        timeout=$(($max_date - $(date +%s)))
+    fi
+
+    update_github pending "Running tests..."
+
+    run_loop \
+        $timeout \
+        $upload_dir/output.log \
+        /var/tmp/checkout \
+        $state/parsed/tests \
+        $state/parsed/envs || rc=$?
 
     echo "$rc" > $state/rc
 }

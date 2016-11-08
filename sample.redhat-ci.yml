@@ -83,6 +83,27 @@ env:
     VAR1: val1
     VAR2: val2
 
+# OPTIONAL
+# If the project follows the Build API (see
+# https://github.com/cgwalters/build-api), you may specify
+# the 'build' key to automatically build the code.
+build: true
+
+# You may customize the build further by providing a dict
+# instead.
+build:
+    # OPTIONAL
+    # Customize the configuration step.
+    config-opts: >
+        --enable-systemd
+        CFLAGS='-fsanitize=undefined'
+    # OPTIONAL
+    # Customize the build step.
+    build-opts: MYVAR=1
+    # OPTIONAL
+    # Customize the install step.
+    install-opts: DESTDIR=$PWD/install
+
 # REQUIRED
 # Put the tasks to be executed in the 'tests' key. They are
 # run from the root of the repo.

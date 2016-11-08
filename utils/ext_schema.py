@@ -46,3 +46,17 @@ def ext_timeout(value, rule_obj, path):
     if common.str_to_timeout(value) > (2 * 60 * 60):
         raise SchemaError("timeout cannot be greater than 2 hours")
     return True
+
+def ext_build(value, rule_obj, path):
+    if type(value) not in [dict, bool]:
+        raise SchemaError("expected bool or map")
+    if type(value) is dict:
+        schema = { 'mapping':
+                   { 'config-opts': { 'type': 'str' },
+                     'build-opts': { 'type': 'str' },
+                     'install-opts': { 'type': 'str' }
+                   }
+                 }
+        c = Core(source_data=value, schema_data=schema)
+        c.validate()
+    return True
