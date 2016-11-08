@@ -47,11 +47,12 @@ def parse_suites():
     nsuites = 0
     branch = os.environ.get('github_branch')
     for idx, suite in enumerate(parser.load_suites(yml_file)):
-        branches = suite.get('branches', ['master'])
-        if branch is not None and branch not in branches:
-            print("INFO: %s suite not defined to run for branch %s." %
-                  (common.ordinal(idx + 1), branch))
-            continue
+        if len(os.environ.get('RHCI_DEBUG_ALWAYS_RUN', '')) == 0:
+            branches = suite.get('branches', ['master'])
+            if branch is not None and branch not in branches:
+                print("INFO: %s suite not defined to run for branch %s." %
+                      (common.ordinal(idx + 1), branch))
+                continue
         suite_dir = 'state/suite-%d/parsed' % nsuites
         parser.flush_suite(suite, suite_dir)
         nsuites += 1
