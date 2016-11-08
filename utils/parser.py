@@ -151,6 +151,16 @@ def flush_suite(suite, outdir):
             envs += 'export %s=%s\n' % (k, shlex.quote(v))
         write_to_file("envs", envs)
 
+    if 'build' in suite:
+        v = suite['build']
+        if type(v) is bool and v:
+            write_to_file("build", '')
+        elif type(v) is dict:
+            write_to_file("build", '')
+            write_to_file("build.config_opts", v.get('config-opts', ''))
+            write_to_file("build.build_opts", v.get('build-opts', ''))
+            write_to_file("build.install_opts", v.get('install-opts', ''))
+
 
 if __name__ == '__main__':
 
