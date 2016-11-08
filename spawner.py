@@ -8,7 +8,11 @@ import sys
 import traceback
 import subprocess
 
+from yaml.scanner import ScannerError
+from pykwalify.errors import SchemaError
+
 import utils.parser as parser
+import utils.common as common
 import utils.ghupdate as ghupdate
 
 
@@ -17,13 +21,12 @@ def main():
 
     try:
         n = parse_suites()
-    except SyntaxError as e:
-        # print the error to give feedback, but exit nicely
+    except ScannerError:
+        update_gh('error', "YAML syntax error.")
+    except SchemaError as e:
+        # print the error to give feedback in the logs, but exit nicely
         traceback.print_exc()
-        msg = e.msg
-        if e.__cause__ is not None:
-            msg += ": " + e.__cause__.msg
-        update_gh('error', msg)
+        update_gh('error', "YAML semantic error.")
     else:
         if n > 0:
             spawn_testrunners(n)
@@ -44,11 +47,12 @@ def parse_suites():
     nsuites = 0
     branch = os.environ.get('github_branch')
     for idx, suite in enumerate(parser.load_suites(yml_file)):
-        branches = suite.get('branches', ['master'])
-        if branch is not None and branch not in branches:
-            print("INFO: %s suite not defined to run for branch %s." %
-                  (parser.ordinal(idx + 1), branch))
-            continue
+        if len(os.environ.get('RHCI_DEBUG_ALWAYS_RUN', '')) == 0:
+            branches = suite.get('branches', ['master'])
+            if branch is not None and branch not in branches:
+                print("INFO: %s suite not defined to run for branch %s." %
+                      (common.ordinal(idx + 1), branch))
+                continue
         suite_dir = 'state/suite-%d/parsed' % nsuites
         parser.flush_suite(suite, suite_dir)
         nsuites += 1

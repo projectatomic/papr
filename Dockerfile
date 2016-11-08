@@ -12,12 +12,6 @@ RUN dnf install -y \
 		nmap-ncat && \
 	dnf clean all
 
-RUN pip3 install \
-		python-novaclient \
-		awscli \
-		PyYAML \
-		jinja2
-
 # There's a tricky bit here. We mount $PWD at $PWD in the
 # container so that when we do the nested docker run in the
 # main script, the paths the daemon receives will still be
@@ -51,6 +45,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e BUILD_ID \
              -e RHCI_DEBUG_NO_TEARDOWN \
              -e RHCI_DEBUG_ALWAYS_RUN \
+             -e RHCI_DEBUG_USE_NODE \
              \${OPT1} \
              \${IMAGE}"
 
@@ -59,5 +54,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
 ENV PYTHONUNBUFFERED 1
 
 COPY . /redhat-ci
+
+RUN pip3 install -r /redhat-ci/requirements.txt
 
 CMD ["/redhat-ci/main"]

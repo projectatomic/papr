@@ -7,9 +7,15 @@
 
 import re
 import os
+import sys
 import yaml
 import shlex
 import argparse
+
+import utils.common as common
+
+from pykwalify.core import Core
+from pykwalify.errors import SchemaError
 
 
 def load_suites(filepath):
@@ -23,13 +29,13 @@ def load_suites(filepath):
                 suite = _merge(suite, raw_yaml)
                 _validate(suite, contexts)
                 yield suite
-            except SyntaxError as e:
+            except SchemaError as e:
                 # if it happens on the very first document, let's just give the
                 # exact error directly
                 if idx == 0:
                     raise e
-                msg = "failed to parse %s testsuite" % ordinal(idx + 1)
-                raise SyntaxError(msg) from e
+                msg = "failed to parse %s testsuite" % common.ordinal(idx + 1)
+                raise SchemaError(msg) from e
 
 
 def _merge(suite, new):
@@ -78,40 +84,12 @@ def _normalize(suite):
 
 def _validate(suite, contexts):
 
-    # XXX: We need a proper full schema validation here.
-    # Maybe using: https://pypi.python.org/pypi/pykwalify
-    # Probably better to just merge this with flush_suite()
-    # since it does the real validation on-the-fly.
-
-    if 'host' in suite and 'container' in suite:
-        raise SyntaxError("expected only one of 'host' and 'container'")
-    elif 'host' in suite:
-        if 'distro' not in suite['host']:
-            raise SyntaxError("expected 'distro' entry in 'host' dict")
-    elif 'container' in suite:
-        if 'image' not in suite['container']:
-            raise SyntaxError("expected 'image' entry in 'container' dict")
-    else:
-        raise SyntaxError("expected one of 'host' or 'container'")
-
-    if 'extra-repos' in suite:
-        repos = suite['extra-repos']
-        if type(repos) is not list:
-            raise SyntaxError("expected a list of dicts for 'extra-repos'")
-        for i, repo in enumerate(suite['extra-repos']):
-            if type(repo) is not dict:
-                raise SyntaxError("expected a list of dicts for 'extra-repos'")
-            if 'name' not in repo:
-                raise SyntaxError("expected 'name' key in extra repo %d" % i)
-
-    if 'tests' not in suite or type(suite['tests']) is not list:
-        raise SyntaxError("expected a list for 'tests'")
-
-    if 'context' not in suite:
-        raise SyntaxError("expected 'context' key")
+    schema = os.path.join(sys.path[0], "utils/schema.yml")
+    c = Core(source_data=suite, schema_files=[schema])
+    c.validate()
 
     if suite['context'] in contexts:
-        raise SyntaxError("duplicate 'context' value detected")
+        raise SchemaError("duplicate 'context' value detected")
 
     contexts.append(suite['context'])
 
@@ -128,16 +106,14 @@ def flush_suite(suite, outdir):
         host = suite['host']
         if 'ostree' in host:
             val = host['ostree']
-            if type(val) is str:  # latest
-                if val != "latest":
-                    raise SyntaxError("invalid value for 'ostree' key" % val)
+            assert type(val) in [str, dict]
+            if type(val) is str:
+                assert val == "latest"
                 write_to_file("ostree_revision", "")
-            elif type(val) is dict:
+            else:
                 write_to_file("ostree_remote", val.get('remote', ''))
                 write_to_file("ostree_branch", val.get('branch', ''))
                 write_to_file("ostree_revision", val.get('revision', ''))
-            else:
-                raise SyntaxError("expected str or dict for 'ostree' key")
         write_to_file("distro", host['distro'])
 
     if 'container' in suite:
@@ -145,7 +121,10 @@ def flush_suite(suite, outdir):
 
     write_to_file("tests", '\n'.join(suite['tests']))
     write_to_file("branches", '\n'.join(suite.get('branches', ['master'])))
-    write_to_file("timeout", suite.get('timeout', '2h'))
+
+    timeout = common.str_to_timeout(suite.get('timeout', '2h'))
+    write_to_file("timeout", str(timeout))
+
     write_to_file("context", suite.get('context'))
 
     if 'extra-repos' in suite:
@@ -169,27 +148,18 @@ def flush_suite(suite, outdir):
     if 'env' in suite:
         envs = ''
         for k, v in suite['env'].items():
-            if re.match('[a-zA-Z_][a-zA-Z0-9_]*', k) is None:
-                raise SyntaxError("invalid env var name '%s'" % k)
-            v = shlex.quote(v)
-            envs += 'export %s=%s\n' % (k, v)
+            envs += 'export %s=%s\n' % (k, shlex.quote(v))
         write_to_file("envs", envs)
 
-
-# http://stackoverflow.com/a/39596504/308136
-# XXX: move to a generic util module
-def ordinal(n):
-    suffix = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th']
-    if n < 0:
-        n *= -1
-    n = int(n)
-
-    if n % 100 in (11, 12, 13):
-        s = 'th'
-    else:
-        s = suffix[n % 10]
-
-    return str(n) + s
+    if 'build' in suite:
+        v = suite['build']
+        if type(v) is bool and v:
+            write_to_file("build", '')
+        elif type(v) is dict:
+            write_to_file("build", '')
+            write_to_file("build.config_opts", v.get('config-opts', ''))
+            write_to_file("build.build_opts", v.get('build-opts', ''))
+            write_to_file("build.install_opts", v.get('install-opts', ''))
 
 
 if __name__ == '__main__':
