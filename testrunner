@@ -361,6 +361,7 @@ fetch_artifacts() {
 
         mkdir $upload_dir/artifacts
 
+        local fetched_at_least_one=0
         if ! containerized; then
             local node_addr=$(cat $state/node_addr)
 
@@ -368,6 +369,7 @@ fetch_artifacts() {
                 path="/var/tmp/checkout/$artifact"
                 if vmssh [ -e "$path" ]; then
                     vmscp -r "root@$node_addr:$path" $upload_dir/artifacts
+                    fetched_at_least_one=1
                 fi
             done < $state/parsed/artifacts
         else
@@ -376,8 +378,13 @@ fetch_artifacts() {
                 path="/var/tmp/checkout/$artifact"
                 if sudo docker exec $cid [ -e "$path" ]; then
                     sudo docker cp "$cid:$path" $upload_dir/artifacts
+                    fetched_at_least_one=1
                 fi
             done < $state/parsed/artifacts
+        fi
+
+        if [ $fetched_at_least_one == 0 ]; then
+            rm -rf $upload_dir/artifacts
         fi
     fi
 }
