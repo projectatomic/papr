@@ -6,6 +6,7 @@
 import os
 import sys
 import traceback
+import threading
 import subprocess
 
 from yaml.scanner import ScannerError
@@ -66,9 +67,16 @@ def spawn_testrunners(n):
     testrunner = os.path.join(sys.path[0], "testrunner")
 
     runners = []
+    threads = []
     for i in range(n):
-        p = subprocess.Popen([testrunner, str(i)])
+        p = subprocess.Popen([testrunner, str(i)],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        t = threading.Thread(target=read_pipe,
+                             args=(i, p.stdout))
+        t.start()
         runners.append(p)
+        threads.append(t)
 
     # We don't implement any fail fast here, so just do a
     # naive wait to collect them all.
@@ -77,11 +85,23 @@ def spawn_testrunners(n):
         if runner.wait() != 0:
             failed = True
 
+    for thread in threads:
+        thread.join()
+
     # NB: When we say 'failed' here, we're talking about
     # infrastructure failure. Bad PR code should never cause
     # rc != 0.
     if failed:
         raise Exception("at least one runner failed")
+
+
+def read_pipe(idx, fd):
+    s = fd.readline()
+    while s != b'':
+        if not s.endswith(b'\n'):
+            s += b'\n'
+        sys.stdout.buffer.write((b'[%d] ' % idx) + s)
+        s = fd.readline()
 
 
 def count_failures(n):
