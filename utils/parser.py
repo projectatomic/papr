@@ -85,7 +85,8 @@ def _normalize(suite):
 def _validate(suite, contexts):
 
     schema = os.path.join(sys.path[0], "utils/schema.yml")
-    c = Core(source_data=suite, schema_files=[schema])
+    ext = os.path.join(sys.path[0], "utils/ext_schema.py")
+    c = Core(source_data=suite, schema_files=[schema], extensions=[ext])
     c.validate()
 
     if suite['context'] in contexts:

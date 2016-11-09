@@ -1,5 +1,3 @@
-extensions:
-  - utils/ext_schema.py
 type: map
 func: ext_testenv
 mapping:
