@@ -336,7 +336,6 @@ build_and_test() {
 
         local max_date=$(($(date +%s) + $timeout))
 
-        rc=0
         run_loop \
             $timeout \
             $upload_dir/build.log \
@@ -344,22 +343,20 @@ build_and_test() {
             $state/build.sh \
             $state/parsed/envs || rc=$?
 
-        if [ $rc != 0 ]; then
-            echo "$rc" > $state/rc
-            return
-        fi
-
         timeout=$(($max_date - $(date +%s)))
     fi
 
-    update_github pending "Running tests..."
+    if [ $rc = 0 ] && [ -f $state/parsed/tests ]; then
 
-    run_loop \
-        $timeout \
-        $upload_dir/output.log \
-        /var/tmp/checkout \
-        $state/parsed/tests \
-        $state/parsed/envs || rc=$?
+      update_github pending "Running tests..."
+
+      run_loop \
+          $timeout \
+          $upload_dir/output.log \
+          /var/tmp/checkout \
+          $state/parsed/tests \
+          $state/parsed/envs || rc=$?
+    fi
 
     echo "$rc" > $state/rc
 }
@@ -404,10 +401,13 @@ s3_upload() {
     local indexer=$(realpath $THIS_DIR/utils/indexer.py)
     local upload_dir=$(cat $state/upload_dir)
 
-    # if we just have output.log, then just link directly to that
-    if [ -f $upload_dir/output.log ] && \
-       [ $(find $upload_dir -mindepth 1 | wc -l) == 1 ]; then
-        local s3_object=output.log
+    # if we just have output.log or build.log, then just link directly to that
+    if [ $(find $upload_dir -mindepth 1 | wc -l) == 1 ]; then
+        if [ -f $upload_dir/output.log ]; then
+            local s3_object=output.log
+        elif [ -f $upload_dir/build.log ]; then
+            local s3_object=build.log
+        fi
     else
         # don't change directory in current session
         ( cd $upload_dir && $indexer )

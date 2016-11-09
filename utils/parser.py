@@ -120,7 +120,9 @@ def flush_suite(suite, outdir):
     if 'container' in suite:
         write_to_file("image", suite['container']['image'])
 
-    write_to_file("tests", '\n'.join(suite['tests']))
+    if 'tests' in suite:
+        write_to_file("tests", '\n'.join(suite['tests']))
+
     write_to_file("branches", '\n'.join(suite.get('branches', ['master'])))
 
     timeout = common.str_to_timeout(suite.get('timeout', '2h'))

@@ -83,7 +83,7 @@ env:
     VAR1: val1
     VAR2: val2
 
-# OPTIONAL
+# REQUIRED (at least one of 'build' or 'tests')
 # If the project follows the Build API (see
 # https://github.com/cgwalters/build-api), you may specify
 # the 'build' key to automatically build the code.
@@ -104,13 +104,12 @@ build:
     # Customize the install step.
     install-opts: DESTDIR=$PWD/install
 
-# REQUIRED
+# REQUIRED (at least one of 'build' or 'tests')
 # Put the tasks to be executed in the 'tests' key. They are
-# run from the root of the repo.
+# run from the root of the repo. If the 'build' key is also
+# present, tests will run after a successful build.
 tests:
-    - make
     - make check
-    - make install
     - make installcheck
 
 # OPTIONAL

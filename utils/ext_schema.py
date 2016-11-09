@@ -8,6 +8,8 @@ def ext_testenv(value, rule_obj, path):
         raise SchemaError("only one of 'host' and 'container' allowed")
     if 'host' not in value and 'container' not in value:
         raise SchemaError("one of 'host' or 'container' required")
+    if 'build' not in value and 'tests' not in value:
+        raise SchemaError("at least one of 'build' or 'tests' required")
     return True
 
 def ext_repos(value, rule_obj, path):
