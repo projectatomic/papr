@@ -6,6 +6,7 @@ RUN dnf install -y \
 		gcc \
 		sudo \
 		docker \
+		findutils \
 		python3-devel \
 		redhat-rpm-config \
 		python3-pip \
