@@ -20,6 +20,7 @@ Projects currently monitored are:
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
 - [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
 - [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
+- [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 
 **If you would like to have a repository added, please open
