@@ -400,18 +400,20 @@ fetch_artifacts() {
 s3_upload() {
     local indexer=$(realpath $THIS_DIR/utils/indexer.py)
     local upload_dir=$(cat $state/upload_dir)
+    local s3_object=index.html
 
     # if we just have output.log or build.log, then just link directly to that
-    if [ $(find $upload_dir -mindepth 1 | wc -l) == 1 ]; then
+    if [ $(find $upload_dir -mindepth 1 | wc -l) = 1 ]; then
         if [ -f $upload_dir/output.log ]; then
-            local s3_object=output.log
+            s3_object=output.log
         elif [ -f $upload_dir/build.log ]; then
-            local s3_object=build.log
+            s3_object=build.log
         fi
-    else
+    fi
+
+    if [ $s3_object = index.html ]; then
         # don't change directory in current session
         ( cd $upload_dir && $indexer )
-        local s3_object=index.html
     fi
 
     # only actually upload if we're given $s3_prefix
