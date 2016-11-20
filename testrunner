@@ -408,6 +408,8 @@ s3_upload() {
             s3_object=output.log
         elif [ -f $upload_dir/build.log ]; then
             s3_object=build.log
+        elif [ -f $upload_dir/setup.log ]; then
+            s3_object=setup.log
         fi
     fi
 
