@@ -5,7 +5,6 @@
 # integrate pieces of the pipeline in here. E.g.
 # provisioning, prereqs, test runs, etc...
 
-import re
 import os
 import sys
 import yaml
@@ -95,40 +94,66 @@ def _validate(suite, contexts):
     contexts.append(suite['context'])
 
 
-def flush_suite(suite, outdir):
+def write_to_file(dir, fn, s):
+    with open(os.path.join(dir, fn), 'w') as f:
+        f.write(s)
 
-    def write_to_file(fn, s):
-        with open(os.path.join(outdir, fn), 'w') as f:
-            f.write(s)
+
+def flush_host(host, outdir):
+    if 'ostree' in host:
+        val = host['ostree']
+        assert type(val) in [str, dict]
+        if type(val) is str:
+            assert val == "latest"
+            write_to_file(outdir, "ostree_revision", "")
+        else:
+            write_to_file(outdir, "ostree_remote", val.get('remote', ''))
+            write_to_file(outdir, "ostree_branch", val.get('branch', ''))
+            write_to_file(outdir, "ostree_revision", val.get('revision', ''))
+    write_to_file(outdir, "distro", host['distro'])
+
+
+def flush_suite(suite, outdir):
 
     os.makedirs(outdir)
 
     if 'host' in suite:
-        host = suite['host']
-        if 'ostree' in host:
-            val = host['ostree']
-            assert type(val) in [str, dict]
-            if type(val) is str:
-                assert val == "latest"
-                write_to_file("ostree_revision", "")
-            else:
-                write_to_file("ostree_remote", val.get('remote', ''))
-                write_to_file("ostree_branch", val.get('branch', ''))
-                write_to_file("ostree_revision", val.get('revision', ''))
-        write_to_file("distro", host['distro'])
+        dir = os.path.join(outdir, "host")
+        os.mkdir(dir)
+        flush_host(suite['host'], dir)
+        write_to_file(outdir, 'envtype', 'host')
+        write_to_file(outdir, 'controller', 'host')
 
     if 'container' in suite:
-        write_to_file("image", suite['container']['image'])
+        write_to_file(outdir, "image", suite['container']['image'])
+        write_to_file(outdir, 'envtype', 'container')
+        write_to_file(outdir, 'controller', 'container')
+
+    if 'cluster' in suite:
+        cluster = suite['cluster']
+        for i, host in enumerate(cluster['hosts']):
+            dir = os.path.join(outdir, "host-%d" % i)
+            os.mkdir(dir)
+            flush_host(host, dir)
+            write_to_file(dir, "name", host['name'])
+        write_to_file(outdir, 'nhosts', str(i+1))
+        if 'container' in cluster:
+            write_to_file(outdir, "image", cluster['container']['image'])
+            write_to_file(outdir, 'controller', 'container')
+        else:
+            write_to_file(outdir, 'controller', 'host')
+        write_to_file(outdir, 'envtype', 'cluster')
 
     if 'tests' in suite:
-        write_to_file("tests", '\n'.join(suite['tests']))
+        write_to_file(outdir, "tests", '\n'.join(suite['tests']))
 
-    write_to_file("branches", '\n'.join(suite.get('branches', ['master'])))
+    write_to_file(outdir, "branches",
+                  '\n'.join(suite.get('branches', ['master'])))
 
     timeout = common.str_to_timeout(suite.get('timeout', '2h'))
-    write_to_file("timeout", str(timeout))
+    write_to_file(outdir, "timeout", str(timeout))
 
-    write_to_file("context", suite.get('context'))
+    write_to_file(outdir, "context", suite.get('context'))
 
     if 'extra-repos' in suite:
         repos = ''
@@ -137,32 +162,35 @@ def flush_suite(suite, outdir):
             for key, val in repo.items():
                 repos += "%s=%s\n" % (key, val)
         if repos != "":
-            write_to_file("rhci-extras.repo", repos)
+            write_to_file(outdir, "rhci-extras.repo", repos)
 
     if 'packages' in suite:
         packages = []
         for pkg in suite['packages']:
             packages.append(shlex.quote(pkg))
-        write_to_file("packages", ' '.join(packages))
+        write_to_file(outdir, "packages", ' '.join(packages))
 
     if 'artifacts' in suite:
-        write_to_file("artifacts", '\n'.join(suite['artifacts']))
+        write_to_file(outdir, "artifacts", '\n'.join(suite['artifacts']))
 
     if 'env' in suite:
         envs = ''
         for k, v in suite['env'].items():
             envs += 'export %s=%s\n' % (k, shlex.quote(v))
-        write_to_file("envs", envs)
+        write_to_file(outdir, "envs", envs)
 
     if 'build' in suite:
         v = suite['build']
         if type(v) is bool and v:
-            write_to_file("build", '')
+            write_to_file(outdir, "build", '')
         elif type(v) is dict:
-            write_to_file("build", '')
-            write_to_file("build.config_opts", v.get('config-opts', ''))
-            write_to_file("build.build_opts", v.get('build-opts', ''))
-            write_to_file("build.install_opts", v.get('install-opts', ''))
+            write_to_file(outdir, "build", '')
+            write_to_file(outdir, "build.config_opts",
+                          v.get('config-opts', ''))
+            write_to_file(outdir, "build.build_opts",
+                          v.get('build-opts', ''))
+            write_to_file(outdir, "build.install_opts",
+                          v.get('install-opts', ''))
 
 
 if __name__ == '__main__':
