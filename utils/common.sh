@@ -46,3 +46,49 @@ common_update_github() {
             --url "$url"
     fi
 }
+
+# Block until a node is available through SSH
+# $1    node IP address
+# $2    private key
+ssh_wait() {
+    local node_addr=$1; shift
+    local node_key=$1; shift
+
+    timeout 120s "$THIS_DIR/utils/sshwait" $node_addr
+
+    # We have to be extra cautious here -- OpenStack
+    # networking takes some time to settle, so we wait until
+    # we can contact the node for 5 continuous seconds.
+
+    local max_sleep=30
+    local failed=1
+
+    sustain_true() {
+        local sustain=5
+        while [ $sustain -gt 0 ]; do
+            if ! ssh -q -n -i $node_key \
+                     -o StrictHostKeyChecking=no \
+                     -o PasswordAuthentication=no \
+                     -o UserKnownHostsFile=/dev/null \
+                     root@$node_addr true; then
+                        return 1
+            fi
+            sustain=$((sustain - 1))
+            max_sleep=$((max_sleep - 1))
+            sleep 1
+        done
+        failed=0
+    }
+
+    while ! sustain_true && [ $max_sleep -gt 0 ]; do
+        max_sleep=$((max_sleep - 1))
+        sleep 1
+    done
+
+    unset -f sustain_true
+
+    if [ $failed == 1 ]; then
+        echo "ERROR: Timed out while waiting for SSH."
+        return 1
+    fi
+}

@@ -10,19 +10,10 @@ source $THIS_DIR/utils/common.sh
 
 main() {
 
-    # NB: bash trickery: don't use any of the function calls
-    # in if-statements, it will completely disable set -e
-    # inside the function... Yet another reason to port this
-    # to Python.
-
-    # NB2: if you need to change directory, do it in a
-    # subshell.
-
-    # NB3: the use of eval is strictly forbidden. Never
-    # directly run a user-provided variable.
+    # NB: see the various NBs in the main() of main.
 
     # We take a single argument; the state dir index to use.
-    # But we still expect the global state dir to be the
+    # But we still expect the global state dir to be in the
     # $PWD.
     state_idx=$1; shift
 
@@ -52,8 +43,14 @@ provision_env() {
         ensure_teardown_container
         provision_container
     else
-        ensure_teardown_node
-        provision_node
+        ssh_setup_key
+        if clustered; then
+            ensure_teardown_cluster
+            provision_cluster
+        else
+            ensure_teardown_node
+            provision_node
+        fi
     fi
 }
 
@@ -74,38 +71,49 @@ provision_container() {
 
 provision_node() {
 
-    # the allowed fields for "distro" are the same as the image name in glance
-    local image=$(cat $state/parsed/distro)
-
-    update_github pending "Provisioning test node..."
+    update_github pending "Provisioning host..."
 
     # substitute node to use in "<name>:<ip>" format
     if [ -n "${RHCI_DEBUG_USE_NODE:-}" ]; then
-        echo "${RHCI_DEBUG_USE_NODE%:*}" > $state/node_name
-        echo "${RHCI_DEBUG_USE_NODE#*:}" > $state/node_addr
+        echo "${RHCI_DEBUG_USE_NODE%:*}" > $state/host/node_name
+        echo "${RHCI_DEBUG_USE_NODE#*:}" > $state/host/node_addr
     else
-        # XXX: We hardcode m1.small for now, but these really
-        # should be specified indirectly from the .redhat-ci
-        # YAML file through e.g. min-* vars.
-        env \
-            os_image="$image" \
-            os_flavor=m1.small \
-            os_name_prefix=github-ci-testnode \
-            os_user_data="$THIS_DIR/utils/user-data" \
-            "$THIS_DIR/utils/os_provision.py" $state
-    fi
-
-    ssh_setup_key
-
-    ssh_wait
-
-    if [ -f $state/parsed/ostree_revision ]; then
-        if ! on_atomic_host; then
-            update_github error "Cannot specify 'ostree' on non-AH."
+        $THIS_DIR/provisioner $state $state/parsed/host $state/host
+        if [ -f $state/exit ]; then
+            # the provisioner encountered a user error and already updated GH
             exit 0
         fi
-        deploy_ostree
     fi
+}
+
+provision_cluster() {
+    local nhosts=$(cat $state/parsed/nhosts)
+
+    update_github pending "Provisioning cluster..."
+
+    seq 0 $((nhosts - 1)) | xargs -P 0 -n 1 -I {} \
+        $THIS_DIR/provisioner $state $state/parsed/host-{} $state/host-{}
+
+    if [ -f $state/exit ]; then
+        # a provisioner encountered a user error and already updated GH
+        exit 0
+    fi
+
+    if container_controlled; then
+        provision_container
+    else
+        # make the first host the controller
+        ln -s host-0 $state/host
+    fi
+
+    local i=0
+    while [ $i -lt $nhosts ]; do
+        local name=$(cat $state/parsed/host-$i/name)
+        local addr=$(cat $state/host-$i/node_addr)
+        name=$(sed 's/[.-]/_/g' <<< "$name")
+        echo "export RHCI_${name}_IP=${addr}" >> $state/parsed/envs
+        i=$((i + 1))
+    done
 }
 
 prepare_env() {
@@ -127,6 +135,10 @@ prepare_env() {
         fi
     fi
 
+    if clustered; then
+        ssh_setup_cluster
+    fi
+
     envcmd mkdir /var/tmp/checkout
     envcp checkouts/$github_repo/. /var/tmp/checkout
 }
@@ -138,97 +150,77 @@ ssh_setup_key() {
     set -x
 }
 
-ssh_wait() {
-    local node_addr=$(cat $state/node_addr)
+ssh_setup_cluster() {
+    local nhosts=$(cat $state/parsed/nhosts)
 
-    timeout 120s "$THIS_DIR/utils/sshwait" $node_addr
+    # since the common case is to interact with the various
+    # nodes by ssh, let's make sure it's all set up nicely
+    # ahead of time
 
-    # We have to be extra cautious here -- OpenStack
-    # networking takes some time to settle, so we wait until
-    # we can contact the node for 5 continuous seconds.
-
-    local max_sleep=30
-    local failed=1
-
-    sustain_true() {
-        local sustain=5
-        while [ $sustain -gt 0 ]; do
-            if ! vmssh true; then
-                return 1
-            fi
-            sustain=$((sustain - 1))
-            max_sleep=$((max_sleep - 1))
-            sleep 1
-        done
-        failed=0
-    }
-
-    while ! sustain_true && [ $max_sleep -gt 0 ]; do
-        max_sleep=$((max_sleep - 1))
-        sleep 1
+    # let's go through the hosts once to collect keys
+    local i=0
+    while [ $i -lt $nhosts ]; do
+        local name=$(cat $state/parsed/host-$i/name)
+        local addr=$(cat $state/host-$i/node_addr)
+        ssh-keyscan $addr 2>/dev/null | \
+            sed "s/^/$name,/" >> $state/known_hosts
+        echo $addr $name >> $state/hosts
+        i=$((i + 1))
     done
 
-    unset -f sustain_true
-
-    if [ $failed == 1 ]; then
-        echo "ERROR: Timed out while waiting for SSH."
-        return 1
-    fi
-}
-
-deploy_ostree() {
-    local remote=$(cat $state/parsed/ostree_remote)
-    local branch=$(cat $state/parsed/ostree_branch)
-    local revision=$(cat $state/parsed/ostree_revision)
-
-    skip_reboot=0
-    if [ -z "$remote" ] && [ -z "$branch" ]; then
-
-        rc=0
-        if [ -z "$revision" ]; then
-            vmssh rpm-ostree upgrade --upgrade-unchanged-exit-77 || rc=$?
-        else
-            vmssh rpm-ostree deploy "$revision" || rc=$?
-        fi
-
-        if [ $rc == 77 ]; then
-            skip_reboot=1
-        elif [ $rc != 0 ]; then
-            update_github error "Failed to upgrade or deploy."
-            exit 0
-        fi
-    else
-        local refspec
-
-        if [ -n "$remote" ]; then
-            vmssh ostree remote add --no-gpg-verify rhci "$remote"
-            refspec=rhci:
-        fi
-
-        if [ -n "$branch" ]; then
-            refspec="${refspec}$branch"
-        fi
-
-        vmssh rpm-ostree rebase "$refspec"
-
-        if [ -n "$revision" ]; then
-            # we should really be able to do this in a single step
-            # https://github.com/projectatomic/rpm-ostree/issues/212
-            vmreboot
-            vmssh rpm-ostree deploy "$revision" || rc=$?
-
-            if [ $rc == 77 ]; then
-                skip_reboot=1
-            elif [ $rc != 0 ]; then
-                update_github error "Failed to upgrade or deploy."
-                exit 0
-            fi
-        fi
+    # We use a different key than the one used to provision
+    # the nodes here, since we don't want to expose the
+    # private key of the OpenStack keypair used. NB: not in
+    # a state dir; we don't want to regen a key on every
+    # run.
+    if [ ! -f cluster_keypair/id_rsa ]; then
+        # let's just stick with RSA since it's supported on
+        # all platforms
+        mkdir -p cluster_keypair
+        ssh-keygen -t rsa -b 4096 -N "" -f cluster_keypair/id_rsa
     fi
 
-    if [ $skip_reboot != 1 ]; then
-        vmreboot
+    if container_controlled; then
+        # most base images don't have ssh
+        if ! envcmd [ -x /bin/ssh ]; then
+            env_make_cache
+            envcmd yum install -y openssh-clients
+        fi
+        envcmd mkdir -m 0600 /root/.ssh
+        envcp cluster_keypair/id_rsa /root/.ssh
+        envcp $state/known_hosts /root/.ssh
+        envcp $state/hosts /etc/hosts.append
+        envcmd sh -c "cat /etc/hosts.append >> /etc/hosts"
     fi
+
+    vmipssh() {
+        ip=$1; shift
+        ssh -q -i $state/node_key \
+            -o StrictHostKeyChecking=no \
+            -o PasswordAuthentication=no \
+            -o UserKnownHostsFile=/dev/null \
+            root@$ip "$@"
+    }
+
+    i=0
+    while [ $i -lt $nhosts ]; do
+        local name=$(cat $state/parsed/host-$i/name)
+        local addr=$(cat $state/host-$i/node_addr)
+
+        # some of these could be redone more cleanly through
+        # cloud-init, though the dynamic aspect would
+        # probably end up making it look similar
+        vmipssh $addr hostnamectl set-hostname $name
+        vmipssh $addr "cat >> /etc/hosts" < $state/hosts
+        vmipssh $addr "cat >> /root/.ssh/known_hosts" < $state/known_hosts
+        vmipssh $addr "cat > /root/.ssh/id_rsa" < cluster_keypair/id_rsa
+        vmipssh $addr chmod 0400 /root/.ssh/id_rsa
+        vmipssh $addr "cat >> /root/.ssh/authorized_keys" \
+            < cluster_keypair/id_rsa.pub
+        i=$((i + 1))
+    done
+
+    unset -f vmipssh
 }
 
 overlay_packages() {
@@ -255,16 +247,7 @@ install_packages() {
         mgr=dnf
     fi
 
-    # This is hacky and sad. Preemptively try to refresh
-    # yum/dnf cache to work around flaky distro infras.
-
-    local retries=5
-    while [ $retries -gt 0 ]; do
-        if envcmd $mgr makecache; then
-            break
-        fi
-        retries=$((retries - 1))
-    done
+    env_make_cache
 
     local rc=0
     logged_envcmd $upload_dir/setup.log / - - \
@@ -275,6 +258,20 @@ install_packages() {
         update_github error "Could not install packages." "$(cat $state/url)"
         exit 0
     fi
+}
+
+env_make_cache() {
+
+    # This is hacky and sad. Preemptively try to refresh
+    # yum/dnf cache to work around flaky distro infras.
+
+    local retries=5
+    while [ $retries -gt 0 ]; do
+        if envcmd yum makecache; then
+            break
+        fi
+        retries=$((retries - 1))
+    done
 }
 
 run_loop() {
@@ -370,8 +367,8 @@ fetch_artifacts() {
         mkdir $upload_dir/artifacts
 
         local fetched_at_least_one=0
-        if ! containerized; then
-            local node_addr=$(cat $state/node_addr)
+        if host_controlled; then
+            local node_addr=$(cat $state/host/node_addr)
 
             while IFS='' read -r artifact || [[ -n $artifact ]]; do
                 path="/var/tmp/checkout/$artifact"
@@ -542,18 +539,18 @@ timed_envcmd() {
     # effectively do a 'sh -c' on the passed command, which
     # means that quoting might be an issue.
 
-    if containerized; then
+    if container_controlled; then
         local cid=$(cat $state/cid)
         sudo timeout --signal=KILL $timeout \
             docker exec $cid "$@"
     else
-        local node_addr=$(cat $state/node_addr)
+        local node_addr=$(cat $state/host/node_addr)
         timeout --signal=KILL $timeout \
             ssh -q -n -i $state/node_key \
                 -o StrictHostKeyChecking=no \
                 -o PasswordAuthentication=no \
                 -o UserKnownHostsFile=/dev/null \
-                root@$(cat $state/node_addr) "$@"
+                root@$node_addr "$@"
     fi
 }
 
@@ -572,11 +569,11 @@ envcp() {
     # Also, rsync creates nonexistent dirs, whereas docker
     # does not, so explicitly mkdir beforehand.
 
-    if containerized; then
+    if container_controlled; then
         local cid=$(cat $state/cid)
         sudo docker cp $target $cid:$remote
     else
-        local node_addr=$(cat $state/node_addr)
+        local node_addr=$(cat $state/host/node_addr)
         rsync --quiet -az --no-owner --no-group \
             -e "ssh -q -i $state/node_key \
                        -o StrictHostKeyChecking=no \
@@ -593,7 +590,7 @@ vmssh() {
         -o StrictHostKeyChecking=no \
         -o PasswordAuthentication=no \
         -o UserKnownHostsFile=/dev/null \
-        root@$(cat $state/node_addr) "$@"
+        root@$(cat $state/host/node_addr) "$@"
 }
 
 vmscp() {
@@ -606,7 +603,7 @@ vmscp() {
 vmreboot() {
     vmssh systemctl reboot || :
     sleep 3 # give time for port to go down
-    ssh_wait
+    ssh_wait $(cat $state/host/node_addr) $state/node_key
 }
 
 update_github() {
@@ -619,20 +616,26 @@ ensure_err_github_update() {
 }
 
 teardown_node() {
+    teardown_node_impl \
+        $(cat $state/host/node_name) \
+        $(cat $state/host/node_addr)
+}
 
-    if [ -f $state/node_name ]; then
+teardown_node_impl() {
+    local node_name=$1; shift
+    local node_addr=$1; shift
 
-        local node_name=$(cat $state/node_name)
-        local node_addr=$(cat $state/node_addr)
-
-        if [ -f $state/node_addr ] && \
-           [ -n "${os_floating_ip_pool:-}" ]; then
-            nova floating-ip-disassociate $node_name $node_addr
-            nova floating-ip-delete $node_addr
-        fi
-
-        nova delete $(cat $state/node_name)
+    if [ -z "$node_name" ]; then
+        return
     fi
+
+    if [ -n "$node_addr" ] && \
+       [ -n "${os_floating_ip_pool:-}" ]; then
+        nova floating-ip-disassociate $node_name $node_addr
+        nova floating-ip-delete $node_addr
+    fi
+
+    nova delete $node_name
 }
 
 ensure_teardown_node() {
@@ -653,8 +656,46 @@ ensure_teardown_container() {
     fi
 }
 
+teardown_cluster() {
+    local nhosts=$(cat $state/parsed/nhosts)
+
+    local i=0
+    while [ $i -lt $nhosts ]; do
+        teardown_node_impl \
+            $(cat $state/host-$i/node_name) \
+            $(cat $state/host-$i/node_addr)
+        i=$((i + 1))
+    done
+
+    if container_controlled; then
+        teardown_container
+    fi
+}
+
+ensure_teardown_cluster() {
+    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+        trap teardown_cluster EXIT
+    fi
+}
+
 containerized() {
-    [ -f $state/parsed/image ]
+    [ "$(cat $state/parsed/envtype)" = container ]
+}
+
+virtualized() {
+    [ "$(cat $state/parsed/envtype)" = host ]
+}
+
+clustered() {
+    [ "$(cat $state/parsed/envtype)" = cluster ]
+}
+
+container_controlled() {
+    [ "$(cat $state/parsed/controller)" = container ]
+}
+
+host_controlled() {
+    [ "$(cat $state/parsed/controller)" = host ]
 }
 
 on_atomic_host() {

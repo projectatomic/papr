@@ -38,6 +38,8 @@ main() {
         exit 0
     fi
 
+    export PYTHONUNBUFFERED=1
+
     exec $THIS_DIR/spawner.py
 }
 

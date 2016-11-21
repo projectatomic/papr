@@ -1,5 +1,6 @@
 import re
 
+
 # http://stackoverflow.com/a/39596504/308136
 def ordinal(n):
     suffix = ['th', 'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th']
@@ -13,6 +14,7 @@ def ordinal(n):
         s = suffix[n % 10]
 
     return str(n) + s
+
 
 # normalize timeout str to seconds
 def str_to_timeout(s):
