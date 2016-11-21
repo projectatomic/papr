@@ -1,11 +1,5 @@
-# The current format is very simple and may change in the
-# future as more features get added, though we will try to
-# maintain backwards compatibility (or help projects migrate
-# to the new format).
-
-# REQUIRED (one of 'host' or 'container')
-# All details about the host to provision go under the host
-# key, though for now, 'distro' is the only handled child:
+# REQUIRED (only one of 'host' or 'container' or 'cluster')
+# Provision a single host.
 host:
     # REQUIRED
     # Specify the distro to provision. More options will be
@@ -41,11 +35,35 @@ host:
       # omitted, the latest commit is used.
       revision: 7.145.42
 
-# REQUIRED (one of 'host' or 'container')
+# REQUIRED (only one of 'host' or 'container' or 'cluster')
+# Provision a container.
 container:
     # REQUIRED
     # Specify an FQIN or Docker Hub image.
     image: fedora:24
+
+# REQUIRED (only one of 'host' or 'container' or 'cluster')
+# Provision multiple hosts.
+cluster:
+    # REQUIRED
+    # List of hosts to provision. The same keys as above are
+    # accepted.
+    hosts:
+        # REQUIRED
+        # Node hostname. Also makes the environment variable
+        # $RHCI_{name}_IP available (with dots and dashes
+        # replaced by underscores).
+      - name: host1
+        distro: centos/7/atomic
+        ostree: latest
+      - name: host2
+        distro: fedora/24/cloud
+    # OPTIONAL
+    # If specified, the scripts are run on this container.
+    # If omitted, the scripts are run on the first host
+    # listed in the 'hosts' list.
+    container:
+        image: fedora:24
 
 # OPTIONAL
 # List the branches to test. If omitted, only the master
@@ -111,6 +129,7 @@ build:
 tests:
     - make check
     - make installcheck
+    - ansible-playbook -i host1,$RHCI_host2_IP, playbook.yml
 
 # OPTIONAL
 # Time to allow before aborting tests. Must satisfy regex
@@ -143,9 +162,10 @@ context: 'My other testsuite'
 # To unset an inherited key, simply leave off its value.
 artifacts:
 
-# As a convenience, specifying 'host' automatically unsets
-# 'container' if it was inherited (and vice-versa), so that
-# there is no need to explicitly unset it.
+# As a convenience, specifying one of the 'host',
+# 'container' or 'cluster' keys automatically unsets the
+# other two if inherited, so that there is no need to
+# explicitly unset them.
 host:
   distro: fedora/24/atomic
 
