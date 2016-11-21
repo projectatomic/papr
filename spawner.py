@@ -100,6 +100,7 @@ def read_pipe(idx, fd):
     while s != b'':
         if not s.endswith(b'\n'):
             s += b'\n'
+            # pylint: disable=no-member
         sys.stdout.buffer.write((b'[%d] ' % idx) + s)
         s = fd.readline()
 

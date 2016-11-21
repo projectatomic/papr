@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 
-# This script is not meant to be run manually. It is called
-# from the main script.
+'''
+    This script is not meant to be run manually. It is
+    called from the main script. See the README for details.
 
-# Assumes the usual OpenStack authentication env vars are
-# defined.
-
-# Expects the following env vars:
-#   os_image
-#   os_flavor
-#   os_keyname
-#   os_network
-#   os_user_data
-#   os_name_prefix
-#   os_floating_ip_pool (optional)
-
-# See the README for details.
+    We assume that the usual OpenStack authentication env
+    vars are defined. Addtionally, the following env vars
+    are expected:
+      - os_image
+      - os_flavor
+      - os_keyname
+      - os_network
+      - os_user_data
+      - os_name_prefix
+      - os_floating_ip_pool (optional)
+'''
 
 import os
 import sys
