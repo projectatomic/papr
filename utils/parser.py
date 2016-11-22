@@ -60,11 +60,13 @@ def _merge(suite, new):
 
     assert type(suite) is dict
 
-    # apply some helper conversions
-    if 'container' in suite and 'host' in new:
-        del suite['container']
-    elif 'host' in suite and 'container' in new:
-        del suite['host']
+    # if the suite specifies an envtype, then make sure we
+    # don't inherit the envtype of the old one
+    envtypes = ['container', 'host', 'cluster']
+    if any([i in new for i in envtypes]):
+        for i in envtypes:
+            if i in suite:
+                del suite[i]
 
     # we always expect a new context key
     del suite['context']
