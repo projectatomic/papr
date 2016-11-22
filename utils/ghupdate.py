@@ -16,6 +16,10 @@ import argparse
 import requests
 
 
+class CommitNotFoundException(Exception):
+    pass
+
+
 def _main():
     "Main entry point."
 
@@ -93,11 +97,20 @@ def _update_status(repo, commit, token, data):
 
     # use data= instead of json= in case we're running on an older requests
     resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
+    body = resp.json()
 
-    if resp.status_code != requests.codes.created:  # pylint: disable=no-member
+    # pylint: disable=no-member
+    if resp.status_code != requests.codes.created:
+        if (resp.status_code == requests.codes.unprocessable
+                and body is not None and 'message' in body
+                and "No commit found for SHA" in body['message']):
+            raise CommitNotFoundException()
+
+        # Some other error happened.
         errmsg = "Failed to update commit status [HTTP %d]" % resp.status_code
         errmsg += "\n" + str(resp.headers)
-        errmsg += "\n" + str(resp.json())
+        if body is not None:
+            errmsg += "\n" + str(body)
         raise Exception(errmsg)
 
 

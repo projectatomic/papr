@@ -131,19 +131,25 @@ def count_failures(n):
 
 def update_gh(state, description):
 
-    args = {'repo': os.environ['github_repo'],
-            'commit': os.environ['github_commit'],
-            'token': os.environ['github_token'],
-            'state': state,
-            'context': 'Red Hat CI',
-            'description': description}
+    try:
+        args = {'repo': os.environ['github_repo'],
+                'commit': os.environ['github_commit'],
+                'token': os.environ['github_token'],
+                'state': state,
+                'context': 'Red Hat CI',
+                'description': description}
 
-    ghupdate.send(**args)
-
-    if os.path.isfile('state/is_merge_sha'):
-        with open('state/sha') as f:
-            args['commit'] = f.read()
         ghupdate.send(**args)
+
+        if os.path.isfile('state/is_merge_sha'):
+            with open('state/sha') as f:
+                args['commit'] = f.read().strip()
+            ghupdate.send(**args)
+
+    # it can happen that the commit doesn't even exist
+    # anymore, so let's be tolerant of such errors
+    except ghupdate.CommitNotFoundException:
+        pass
 
 
 if __name__ == '__main__':
