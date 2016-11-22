@@ -2,10 +2,11 @@
 # Provision a single host.
 host:
     # REQUIRED
-    # Specify the distro to provision. More options will be
-    # added, but currently available are:
+    # Specify the distro to provision:
     #   - fedora/24/cloud
     #   - fedora/24/atomic
+    #   - fedora/25/cloud
+    #   - fedora/25/atomic
     #   - centos/7/cloud
     #   - centos/7/atomic
     #   - centos/7/atomic/alpha
