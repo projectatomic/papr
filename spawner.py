@@ -21,17 +21,19 @@ def main():
     "Main entry point."
 
     try:
-        n = parse_suites()
+        suites = parse_suites()
     except ScannerError:
-        update_gh('error', "YAML syntax error.")
+        update_gh('error', "Red Hat CI", "YAML syntax error.")
     except SchemaError as e:
         # print the error to give feedback in the logs, but exit nicely
         traceback.print_exc()
-        update_gh('error', "YAML semantic error.")
+        update_gh('error', "Red Hat CI", "YAML semantic error.")
     else:
+        n = len(suites)
         if n > 0:
             spawn_testrunners(n)
-            count_failures(n)
+            inspect_suite_failures(suites)
+            update_required_context(suites)
         else:
             print("INFO: No testsuites to run.")
 
@@ -45,21 +47,21 @@ def parse_suites():
     # this should have been checked already
     assert os.path.isfile(yml_file)
 
-    nsuites = 0
+    suites = []
     branch = os.environ.get('github_branch')
-    for idx, suite in enumerate(parser.load_suites(yml_file)):
+    suite_parser = parser.SuiteParser(yml_file)
+    for idx, suite in enumerate(suite_parser.parse()):
         if len(os.environ.get('RHCI_DEBUG_ALWAYS_RUN', '')) == 0:
             branches = suite.get('branches', ['master'])
             if branch is not None and branch not in branches:
                 print("INFO: %s suite not defined to run for branch %s." %
                       (common.ordinal(idx + 1), branch))
                 continue
-        suite_dir = 'state/suite-%d/parsed' % nsuites
+        suite_dir = 'state/suite-%d/parsed' % len(suites)
         parser.flush_suite(suite, suite_dir)
-        nsuites += 1
+        suites.append(suite)
 
-    # return the number of testsuites
-    return nsuites
+    return suites
 
 
 def spawn_testrunners(n):
@@ -105,38 +107,55 @@ def read_pipe(idx, fd):
         s = fd.readline()
 
 
-def count_failures(n):
+def inspect_suite_failures(suites):
 
-    # It's helpful to have an easy global way to figure out
-    # if any of the suites failed, e.g. for integration in
-    # Jenkins. Let's write a 'failures' file counting the
-    # number of failed suites.
+    for i, suite in enumerate(suites):
+        assert 'rc' not in suite
 
-    failed = 0
-    for i in range(n):
         # If the rc file doesn't exist but the runner exited
         # nicely, then it means there was a semantic error
         # in the YAML (e.g. bad Docker image, bad ostree
         # revision, etc...).
         if not os.path.isfile("state/suite-%d/rc" % i):
-            failed += 1
+            suite['rc'] = 1
         else:
             with open("state/suite-%d/rc" % i) as f:
-                if int(f.read().strip()) != 0:
-                    failed += 1
+                suite['rc'] = int(f.read().strip())
 
+    # It's helpful to have an easy global way to figure out
+    # if any of the suites failed, e.g. for integration in
+    # Jenkins. Let's write a 'failures' file counting the
+    # number of failed suites.
     with open("state/failures", "w") as f:
-        f.write("%d" % failed)
+        f.write("%d" % count_failures(suites))
 
 
-def update_gh(state, description):
+def count_failures(suites):
+    return sum([int(suite['rc'] != 0) for suite in suites])
+
+
+def update_required_context(suites):
+
+    # only send 'required' context for branches
+    if 'github_pull_id' in os.environ:
+        return
+
+    required_suites = [suite for suite in suites if suite.get('required')]
+    failed = count_failures(required_suites)
+    total = len(required_suites)
+
+    update_gh('success' if failed == 0 else 'failure', 'required',
+              "%d/%d required testsuites passed" % (total - failed, total))
+
+
+def update_gh(state, context, description):
 
     try:
         args = {'repo': os.environ['github_repo'],
                 'commit': os.environ['github_commit'],
                 'token': os.environ['github_token'],
                 'state': state,
-                'context': 'Red Hat CI',
+                'context': context,
                 'description': description}
 
         ghupdate.send(**args)
