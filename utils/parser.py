@@ -4,7 +4,6 @@ import os
 import sys
 import yaml
 import shlex
-import argparse
 
 import utils.common as common
 
@@ -197,18 +196,3 @@ def flush_suite(suite, outdir):
                           v.get('build-opts', ''))
             write_to_file(outdir, "build.install_opts",
                           v.get('install-opts', ''))
-
-
-if __name__ == '__main__':
-
-    # Just dump each parsed document in indexed subdirs of
-    # output_dir. Useful for testing and validating.
-
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('--yml-file', required=True)
-    argparser.add_argument('--output-dir', required=True)
-    args = argparser.parse_args()
-
-    for idx, suite in enumerate(load_suites(args.yml_file)):
-        suite_dir = os.path.join(args.output_dir, str(idx))
-        flush_suite(suite, suite_dir)
