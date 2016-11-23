@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# This is just a trivial parser for now, but as we add more
-# functionality to the .redhat-ci.yml spec, we will want to
-# integrate pieces of the pipeline in here. E.g.
-# provisioning, prereqs, test runs, etc...
-
 import os
 import sys
 import yaml
@@ -17,83 +12,92 @@ from pykwalify.core import Core
 from pykwalify.errors import SchemaError
 
 
-def load_suites(filepath):
-    "Generator of testsuites parsed from the given YAML file."
+class SuiteParser:
 
-    suite = None
-    contexts = []
-    with open(filepath) as f:
-        for idx, raw_yaml in enumerate(yaml.safe_load_all(f.read())):
-            try:
-                suite = _merge(suite, raw_yaml)
-                _validate(suite, contexts)
-                yield suite
-            except SchemaError as e:
-                # if it happens on the very first document, let's just give the
-                # exact error directly
-                if idx == 0:
-                    raise e
-                msg = "failed to parse %s testsuite" % common.ordinal(idx + 1)
-                raise SchemaError(msg) from e
+    def __init__(self, filepath):
+        self.contexts = []
+        self.met_required = False
+        self.filepath = filepath
 
+    def parse(self):
+        "Generator of testsuites parsed from the given YAML file."
 
-def _merge(suite, new):
-    "Merge the next document into the current one."
+        suite = None
+        with open(self.filepath) as f:
+            for idx, raw_yaml in enumerate(yaml.safe_load_all(f.read())):
+                try:
+                    suite = self._merge(suite, raw_yaml)
+                    self._validate(suite)
+                    yield dict(suite)
+                except SchemaError as e:
+                    # if it happens on the very first document, let's
+                    # just give the exact error directly
+                    if idx == 0:
+                        raise e
+                    raise SchemaError("failed to parse %s testsuite"
+                                      % common.ordinal(idx + 1)) from e
 
-    if type(new) is not dict:
-        raise SyntaxError("top-level type should be a dict")
+    def _merge(self, suite, new):
+        "Merge the next document into the current one."
 
-    if suite is None:
+        if type(new) is not dict:
+            raise SyntaxError("top-level type should be a dict")
 
-        # The 'context' key is special. It's optional on the
-        # first suite (defaulting to 'Red Hat CI'), but
-        # required on subsequent suites.
-        if 'context' not in new:
-            new['context'] = "Red Hat CI"
+        if suite is None:
 
-    if 'inherit' in new and type(new['inherit']) is not bool:
-        raise SyntaxError("expected 'bool' value for 'inherit' key")
+            # The 'context' key is special. It's optional on the
+            # first suite (defaulting to 'Red Hat CI'), but
+            # required on subsequent suites.
+            if 'context' not in new:
+                new['context'] = "Red Hat CI"
 
-    # if we're not inheriting, then let's just return the new suite itself
-    if suite is None or not new.get('inherit', False):
-        return _normalize(new.copy())
+        if 'inherit' in new and type(new['inherit']) is not bool:
+            raise SyntaxError("expected 'bool' value for 'inherit' key")
 
-    assert type(suite) is dict
+        # if we're not inheriting, then let's just return the new suite itself
+        if suite is None or not new.get('inherit', False):
+            return self._normalize(new.copy())
 
-    # if the suite specifies an envtype, then make sure we
-    # don't inherit the envtype of the old one
-    envtypes = ['container', 'host', 'cluster']
-    if any([i in new for i in envtypes]):
-        for i in envtypes:
-            if i in suite:
-                del suite[i]
+        assert type(suite) is dict
 
-    # we always expect a new context key
-    del suite['context']
+        # if the suite specifies an envtype, then make sure we
+        # don't inherit the envtype of the old one
+        envtypes = ['container', 'host', 'cluster']
+        if any([i in new for i in envtypes]):
+            for i in envtypes:
+                if i in suite:
+                    del suite[i]
 
-    suite.update(new)
+        # we always expect a new context key
+        del suite['context']
 
-    return _normalize(suite)
+        suite.update(new)
 
+        return self._normalize(suite)
 
-def _normalize(suite):
-    for k, v in list(suite.items()):
-        if k == 'inherit' or v is None:
-            del suite[k]
-    return suite
+    def _normalize(self, suite):
+        for k, v in list(suite.items()):
+            if k == 'inherit' or v is None:
+                del suite[k]
+        return suite
 
+    def _validate(self, suite):
 
-def _validate(suite, contexts):
+        schema = os.path.join(sys.path[0], "utils/schema.yml")
+        ext = os.path.join(sys.path[0], "utils/ext_schema.py")
+        c = Core(source_data=suite, schema_files=[schema], extensions=[ext])
+        c.validate()
 
-    schema = os.path.join(sys.path[0], "utils/schema.yml")
-    ext = os.path.join(sys.path[0], "utils/ext_schema.py")
-    c = Core(source_data=suite, schema_files=[schema], extensions=[ext])
-    c.validate()
+        if suite['context'] in self.contexts:
+            raise SchemaError("duplicate 'context' value detected")
 
-    if suite['context'] in contexts:
-        raise SchemaError("duplicate 'context' value detected")
+        self.met_required = self.met_required or suite.get('required', False)
 
-    contexts.append(suite['context'])
+        if suite['context'] == "required" and self.met_required:
+            raise SchemaError('context "required" forbidden when using the '
+                              "'required' key")
+
+        self.contexts.append(suite['context'])
 
 
 def write_to_file(dir, fn, s):
