@@ -33,8 +33,11 @@ nova = client.Client(2, auth_url=os.environ['OS_AUTH_URL'],
 print("INFO: authenticating")
 nova.authenticate()
 
+# it's possible multiple images match, e.g. during automated
+# image uploads, in which case let's just pick the first one
 print("INFO: resolving image '%s'" % os.environ['os_image'])
-image = nova.images.find(name=os.environ['os_image'])
+image = nova.images.findall(name=os.environ['os_image'])[0]
+
 print("INFO: resolving flavor '%s'" % os.environ['os_flavor'])
 flavor = nova.flavors.find(name=os.environ['os_flavor'])
 print("INFO: resolving network '%s'" % os.environ['os_network'])
