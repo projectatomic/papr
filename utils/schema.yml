@@ -24,13 +24,15 @@ mapping:
           image:
             type: str
             required: true
-  context:
-    type: str
-    required: true
   branches:
     sequence:
       - type: str
         unique: true
+  context:
+    type: str
+    required: true
+  required:
+    type: bool
   extra-repos:
     type: any
     func: ext_repos

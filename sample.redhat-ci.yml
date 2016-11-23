@@ -80,6 +80,14 @@ branches:
 context: 'CI Tester'
 
 # OPTIONAL
+# Mark this testsuite as required. This causes a special
+# "required" context to be reported to GitHub on branch
+# tests. The result is set to successful only if all
+# testsuites marked as required are also successful. If
+# omitted, defaults to false.
+required: true
+
+# OPTIONAL
 # Additional YUM repositories to inject during provisioning.
 extra-repos:
     - name: my-repo-name # REQUIRED key
