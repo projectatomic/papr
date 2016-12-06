@@ -148,7 +148,7 @@ def update_required_context(suites):
 
     failed = count_failures(required_suites)
     update_gh('success' if failed == 0 else 'failure', 'required',
-              "%d/%d required testsuites passed" % (total - failed, total))
+              "%d/%d PASSES" % (total - failed, total))
 
 
 def update_gh(state, context, description):
