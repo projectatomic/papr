@@ -146,12 +146,16 @@ def update_required_context(suites):
     if total == 0:
         return
 
+    # let's link to the branch overview itself
+    url = 'https://github.com/%s/commits/%s' % (os.environ['github_repo'],
+                                                os.environ['github_branch'])
+
     failed = count_failures(required_suites)
     update_gh('success' if failed == 0 else 'failure', 'required',
-              "%d/%d PASSES" % (total - failed, total))
+              "%d/%d PASSES" % (total - failed, total), url)
 
 
-def update_gh(state, context, description):
+def update_gh(state, context, description, url=None):
 
     try:
         args = {'repo': os.environ['github_repo'],
@@ -159,7 +163,8 @@ def update_gh(state, context, description):
                 'token': os.environ['github_token'],
                 'state': state,
                 'context': context,
-                'description': description}
+                'description': description,
+                'url': url}
 
         ghupdate.send(**args)
 
