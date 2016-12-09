@@ -43,6 +43,9 @@ The following optional environment vars may be set:
   for handling of race conditions.
 - `github_token` -- If specified, update the commit status
   using GitHub's API, accessed with this repo-scoped token.
+- `github_contexts` -- A pipe-separated list of contexts. If
+  specified, only the testsuites which set these contexts
+  will be run.
 - `os_keyname` -- OpenStack keypair to use for provisioning,
   if you want to support virtualized tests.
 - `os_privkey` -- Private key corresponding to the OpenStack

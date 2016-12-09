@@ -47,15 +47,24 @@ def parse_suites():
     # this should have been checked already
     assert os.path.isfile(yml_file)
 
+    # are we supposed to run only some testsuites?
+    only_contexts = os.environ.get('github_contexts')
+    if only_contexts is not None:
+        only_contexts = only_contexts.split('|')
+
     suites = []
     branch = os.environ.get('github_branch')
     suite_parser = parser.SuiteParser(yml_file)
     for idx, suite in enumerate(suite_parser.parse()):
         if len(os.environ.get('RHCI_DEBUG_ALWAYS_RUN', '')) == 0:
             branches = suite.get('branches', ['master'])
-            if branch is not None and branch not in branches:
+            if branch and branch not in branches:
                 print("INFO: %s suite not defined to run for branch %s." %
                       (common.ordinal(idx + 1), branch))
+                continue
+            if only_contexts and suite['context'] not in only_contexts:
+                print("INFO: %s suite not in github_contexts env var." %
+                      common.ordinal(idx + 1))
                 continue
         suite_dir = 'state/suite-%d/parsed' % len(suites)
         parser.flush_suite(suite, suite_dir)

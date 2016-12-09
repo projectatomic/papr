@@ -31,6 +31,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e github_branch \
              -e github_pull_id \
              -e github_commit \
+             -e github_contexts \
              -e github_token \
              -e os_keyname \
              -e os_privkey \
