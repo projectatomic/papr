@@ -57,6 +57,10 @@ provision_env() {
 provision_container() {
     local image=$(cat $state/parsed/image)
 
+    if containerized; then
+        update_github pending "Provisioning container..."
+    fi
+
     # Let's pre-pull the image so that it doesn't count
     # as part of the test timeout.
     if ! sudo docker pull "$image"; then
