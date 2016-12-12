@@ -22,6 +22,7 @@ Projects currently monitored are:
 - [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
 - [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
+- [flatpak/flatpak](https://github.com/flatpak/flatpak)
 
 **If you would like to have a repository added, please open
 a pull request to update the list above.**
