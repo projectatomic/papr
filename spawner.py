@@ -149,6 +149,10 @@ def update_required_context(suites):
     if 'github_pull_id' in os.environ:
         return
 
+    # don't send 'required' context if we're only targeting some testsuites
+    if 'github_contexts' in os.environ:
+        return
+
     required_suites = [suite for suite in suites if suite.get('required')]
     total = len(required_suites)
 
