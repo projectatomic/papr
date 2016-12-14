@@ -1,3 +1,7 @@
+# This is a sample .redhat-ci.yml which documents all the
+# supported fields. You can validate your .redhat-ci.yml
+# file by using the validator.py script.
+
 # REQUIRED (only one of 'host' or 'container' or 'cluster')
 # Provision a single host.
 host:
