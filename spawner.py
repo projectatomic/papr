@@ -62,6 +62,10 @@ def parse_suites():
                 print("INFO: %s suite not defined to run for branch %s." %
                       (common.ordinal(idx + 1), branch))
                 continue
+            if not branch and not suite.get('pulls', True):
+                print("INFO: %s suite not defined to run on pull requests." %
+                      common.ordinal(idx + 1))
+                continue
             if only_contexts and suite['context'] not in only_contexts:
                 print("INFO: %s suite not in github_contexts env var." %
                       common.ordinal(idx + 1))

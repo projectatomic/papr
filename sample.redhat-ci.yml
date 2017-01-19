@@ -78,6 +78,13 @@ branches:
     - dev
 
 # OPTIONAL
+# Whether this testsuite should run on pull requests. This
+# is useful for example if you would like longer tests to
+# only run on branches (for use with a merge bot). If
+# omitted, defaults to true.
+pulls: true
+
+# OPTIONAL
 # GitHub commit status context to use when reporting back
 # status updates to GitHub. If omitted, defaults to
 # 'Red Hat CI'.

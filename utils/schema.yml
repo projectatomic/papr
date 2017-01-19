@@ -28,6 +28,8 @@ mapping:
     sequence:
       - type: str
         unique: true
+  pulls:
+    type: bool
   context:
     type: str
     required: true
