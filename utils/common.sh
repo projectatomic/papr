@@ -18,6 +18,11 @@ common_update_github() {
         url=$1; shift
     fi
 
+    if [ -z "${github_commit:-}" ]; then
+        echo "No github_commit defined, ignoring..."
+        return
+    fi
+
     if [ -z "${github_token:-}" ]; then
         echo "No github_token defined, punting on GitHub commit status update:"
         echo $github_repo $github_commit $ghstate "$context" "$description" "$url"
