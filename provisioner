@@ -24,12 +24,12 @@ main() {
 
 provision_host() {
 
-    # XXX: We hardcode m1.small for now, but these really
-    # should be specified indirectly from the .redhat-ci
-    # YAML file through e.g. min-* vars.
     env \
         os_image="$(cat $parsedhost/distro)" \
-        os_flavor=m1.small \
+        os_min_ram=$(cat $parsedhost/min_ram) \
+        os_min_vcpus=$(cat $parsedhost/min_vcpus) \
+        os_min_disk=$(cat $parsedhost/min_disk) \
+        os_min_ephemeral=$(cat $parsedhost/min_ephemeral) \
         os_name_prefix=github-ci-testnode \
         os_user_data="$THIS_DIR/utils/user-data" \
         "$THIS_DIR/utils/os_provision.py" $outdir

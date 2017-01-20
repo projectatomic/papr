@@ -8,7 +8,10 @@
     vars are defined. Addtionally, the following env vars
     are expected:
       - os_image
-      - os_flavor
+      - os_min_ram
+      - os_min_vcpus
+      - os_min_disk
+      - os_min_ephemeral
       - os_keyname
       - os_network
       - os_user_data
@@ -38,8 +41,39 @@ nova.authenticate()
 print("INFO: resolving image '%s'" % os.environ['os_image'])
 image = nova.images.findall(name=os.environ['os_image'])[0]
 
-print("INFO: resolving flavor '%s'" % os.environ['os_flavor'])
-flavor = nova.flavors.find(name=os.environ['os_flavor'])
+# go through all the flavours and determine which one to use
+min_ram = int(os.environ['os_min_ram'])
+min_vcpus = int(os.environ['os_min_vcpus'])
+min_disk = int(os.environ['os_min_disk'])
+min_ephemeral = int(os.environ['os_min_ephemeral'])
+flavors = nova.flavors.findall()
+flavors = [f for f in flavors if (f.ram >= min_ram and
+                                  f.vcpus >= min_vcpus and
+                                  f.disk >= min_disk and
+                                  f.ephemeral >= min_ephemeral)]
+
+if len(flavors) == 0:
+    print("ERROR: no flavor satisfies minimum requirements.")
+    sys.exit(1)
+
+
+# OK, now we need to pick the *least* resource-hungry flavor
+# from the list of flavors that fit the min reqs. This is
+# inevitably subjective, but here we prioritize vcpus, then
+# ram, then disk.
+def filter_flavors(flavors, attr):
+    minval = min([getattr(f, attr) for f in flavors])
+    return [f for f in flavors if getattr(f, attr) == minval]
+
+
+flavors = filter_flavors(flavors, 'vcpus')
+flavors = filter_flavors(flavors, 'ram')
+flavors = filter_flavors(flavors, 'disk')
+flavors = filter_flavors(flavors, 'ephemeral')
+
+flavor = flavors[0]
+print("INFO: choosing flavor '%s'" % flavor.name)
+
 print("INFO: resolving network '%s'" % os.environ['os_network'])
 network = nova.networks.find(label=os.environ['os_network'])
 
@@ -69,7 +103,7 @@ while server_exists(name) and max_tries > 0:
     max_tries -= 1
 
 if max_tries == 0:
-    print("ERROR: Can't find unique name. Something is probably broken.")
+    print("ERROR: can't find unique name. Something is probably broken.")
     sys.exit(1)
 
 print("INFO: booting server '%s'" % name)
@@ -81,6 +115,7 @@ server = nova.servers.create(name, meta=meta, image=image, userdata=userdata,
 def write_to_file(fn, s):
     with open(os.path.join(output_dir, fn), 'w') as f:
         f.write(s)
+
 
 write_to_file('node_name', name)
 

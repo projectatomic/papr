@@ -9,6 +9,16 @@ mapping:
       ostree:
         type: any
         func: ext_ostree
+      specs:
+        mapping:
+          ram:
+            type: int
+          vcpus:
+            type: int
+          disk:
+            type: int
+          ephemeral:
+            type: int
   container:
     mapping:
       image:

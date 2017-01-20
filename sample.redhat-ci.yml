@@ -20,6 +20,25 @@ host:
     distro: centos/7/atomic
 
     # OPTIONAL
+    # Specify the minimum requirements the host must
+    # fulfill. The values defined below are the defaults
+    # used when no minimums are specified.
+    specs:
+      # OPTIONAL
+      # Minimum amount of RAM in MB.
+      ram: 2048
+      # OPTIONAL
+      # Minimum number of VCPUs.
+      vcpus: 1
+      # OPTIONAL
+      # Minimum size of primary ephemeral disk in GB.
+      disk: 20
+      # OPTIONAL
+      # Minimum size of secondary ephemeral disk in GB. Set
+      # to 0 if no secondary ephemeral disk is needed.
+      ephemeral: 0
+
+    # OPTIONAL
     # If using an Atomic Host variant, you can specify which
     # ostree to use. To use the latest tree on the current
     # branch, use:

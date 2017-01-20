@@ -115,6 +115,11 @@ def flush_host(host, outdir):
             write_to_file(outdir, "ostree_remote", val.get('remote', ''))
             write_to_file(outdir, "ostree_branch", val.get('branch', ''))
             write_to_file(outdir, "ostree_revision", val.get('revision', ''))
+    val = host.get("specs", {})
+    write_to_file(outdir, "min_ram", str(val.get("ram", 2048)))
+    write_to_file(outdir, "min_vcpus", str(val.get("vcpus", 1)))
+    write_to_file(outdir, "min_disk", str(val.get("disk", 20)))
+    write_to_file(outdir, "min_ephemeral", str(val.get("ephemeral", 0)))
     write_to_file(outdir, "distro", host['distro'])
 
 
