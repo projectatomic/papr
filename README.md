@@ -13,16 +13,17 @@ file with allowed keys can be found
 
 Projects currently monitored are:
 
+- [flatpak/flatpak](https://github.com/flatpak/flatpak)
+- [ostreedev/ostree](https://github.com/ostreedev/ostree)
 - [projectatomic/atomic](https://github.com/projectatomic/atomic)
+- [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
+- [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
+- [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
 - [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
 - [projectatomic/commissaire-http](https://github.com/projectatomic/commissaire-http)
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
+- [projectatomic/docker-storage-setup](https://github.com/projectatomic/docker-storage-setup)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
-- [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
-- [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
-- [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
-- [ostreedev/ostree](https://github.com/ostreedev/ostree)
-- [flatpak/flatpak](https://github.com/flatpak/flatpak)
 
 **If you would like to have a repository added, please open
 a pull request to update the list above.**
