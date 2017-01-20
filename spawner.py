@@ -95,10 +95,10 @@ def spawn_testrunners(n):
 
     # We don't implement any fail fast here, so just do a
     # naive wait to collect them all.
-    failed = False
-    for runner in runners:
+    failed = []
+    for i, runner in enumerate(runners):
         if runner.wait() != 0:
-            failed = True
+            failed.append(i)
 
     for thread in threads:
         thread.join()
@@ -107,7 +107,7 @@ def spawn_testrunners(n):
     # infrastructure failure. Bad PR code should never cause
     # rc != 0.
     if failed:
-        raise Exception("at least one runner failed")
+        raise Exception("the following runners failed: %s" % str(failed))
 
 
 def read_pipe(idx, fd):
