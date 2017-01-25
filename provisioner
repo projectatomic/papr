@@ -27,9 +27,9 @@ provision_host() {
     env \
         os_image="$(cat $parsedhost/distro)" \
         os_min_ram=$(cat $parsedhost/min_ram) \
-        os_min_vcpus=$(cat $parsedhost/min_vcpus) \
+        os_min_vcpus=$(cat $parsedhost/min_cpus) \
         os_min_disk=$(cat $parsedhost/min_disk) \
-        os_min_ephemeral=$(cat $parsedhost/min_ephemeral) \
+        os_min_ephemeral=$(cat $parsedhost/min_secondary_disk) \
         os_name_prefix=github-ci-testnode \
         os_user_data="$THIS_DIR/utils/user-data" \
         "$THIS_DIR/utils/os_provision.py" $outdir

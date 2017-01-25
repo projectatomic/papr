@@ -13,11 +13,11 @@ mapping:
         mapping:
           ram:
             type: int
-          vcpus:
+          cpus:
             type: int
           disk:
             type: int
-          ephemeral:
+          secondary-disk:
             type: int
   container:
     mapping:

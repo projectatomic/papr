@@ -28,15 +28,15 @@ host:
       # Minimum amount of RAM in MB.
       ram: 2048
       # OPTIONAL
-      # Minimum number of VCPUs.
-      vcpus: 1
+      # Minimum number of CPUs.
+      cpus: 1
       # OPTIONAL
-      # Minimum size of primary ephemeral disk in GB.
+      # Minimum size of primary disk in GB.
       disk: 20
       # OPTIONAL
-      # Minimum size of secondary ephemeral disk in GB. Set
-      # to 0 if no secondary ephemeral disk is needed.
-      ephemeral: 0
+      # Minimum size of secondary disk in GB. Set to 0 if no
+      # secondary disk is needed.
+      secondary-disk: 0
 
     # OPTIONAL
     # If using an Atomic Host variant, you can specify which
