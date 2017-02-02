@@ -22,6 +22,7 @@ Projects currently monitored are:
 - [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
 - [projectatomic/commissaire-http](https://github.com/projectatomic/commissaire-http)
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
+- [projectatomic/docker](https://github.com/projectatomic/docker)
 - [projectatomic/docker-storage-setup](https://github.com/projectatomic/docker-storage-setup)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
 
