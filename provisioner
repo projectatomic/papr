@@ -69,7 +69,7 @@ deploy_ostree() {
             exit 0
         fi
     else
-        local refspec
+        local refspec=
 
         if [ -n "$remote" ]; then
             vmssh ostree remote add --no-gpg-verify rhci "$remote"
