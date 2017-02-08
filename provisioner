@@ -80,7 +80,7 @@ deploy_ostree() {
             refspec="${refspec}$branch"
         fi
 
-        if vmssh rpm-ostree rebase "$refspec"; then
+        if ! vmssh rpm-ostree rebase "$refspec"; then
             update_github error "Failed to rebase onto refspec."
             touch $state/exit # signal testrunner to exit nicely
             exit 0
