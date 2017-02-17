@@ -188,9 +188,7 @@ def update_required_context(suites):
                                  'index.html')
 
     with open(tpl_fname) as tplf:
-        tpl = jinja2.Template(tplf.read(),
-                              extensions=['jinja2.ext.i18n'],
-                              autoescape=True)
+        tpl = jinja2.Template(tplf.read(), autoescape=True)
         data = tpl.render(suites=results_suites)
         upload_to_s3(s3_key, data, 'text/html')
 
