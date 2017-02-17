@@ -5,10 +5,14 @@
 
 import os
 import sys
+import random
 import traceback
 import threading
 import subprocess
+from os.path import dirname, realpath
 
+import boto3
+import jinja2
 from yaml.scanner import ScannerError
 from pykwalify.errors import SchemaError
 
@@ -163,9 +167,34 @@ def update_required_context(suites):
     if total == 0:
         return
 
-    # let's link to the branch overview itself
-    url = 'https://github.com/%s/commits/%s' % (os.environ['github_repo'],
-                                                os.environ['github_branch'])
+    # OK, let's upload a very basic index file that just
+    # links to the results of all the required suites
+
+    results_suites = []
+    for i, suite in enumerate(suites):
+        name = suite['context']
+        with open("state/suite-%d/url" % i) as f:
+            url = f.read().strip()
+        result = (suite['rc'] == 0)
+        results_suites.append((name, result, url))
+
+    tpl_fname = os.path.join(dirname(realpath(__file__)),
+                             'utils', 'required-index.j2')
+
+    s3_key = '%s/%s/%s.%s/%s' % (os.environ['s3_prefix'],
+                                 os.environ['github_repo'],
+                                 os.environ['github_commit'],
+                                 random.randint(0, 2**15-1),
+                                 'index.html')
+
+    with open(tpl_fname) as tplf:
+        tpl = jinja2.Template(tplf.read(),
+                              extensions=['jinja2.ext.i18n'],
+                              autoescape=True)
+        data = tpl.render(suites=results_suites)
+        upload_to_s3(s3_key, data, 'text/html')
+
+    url = 'https://s3.amazonaws.com/%s' % s3_key
 
     failed = count_failures(required_suites)
     update_gh('success' if failed == 0 else 'failure', 'required',
@@ -194,6 +223,12 @@ def update_gh(state, context, description, url=None):
     # anymore, so let's be tolerant of such errors
     except ghupdate.CommitNotFoundException:
         pass
+
+
+def upload_to_s3(bucket_key, data, type):
+    s3 = boto3.resource("s3")
+    bucket, key = bucket_key.split('/', 1)
+    s3.Object(bucket, key).put(Body=data, ContentType=type)
 
 
 if __name__ == '__main__':
