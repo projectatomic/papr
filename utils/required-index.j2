@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <title>Test results</title>
+  </head>
+<body>
+  Test results
+  <ul>
+{% for name, passed, link in suites -%}
+    {%- if passed -%}
+      {% set bgcolor = "#aae0aa" %}
+    {%- else -%}
+      {% set bgcolor = "#e0aaaa" %}
+    {%- endif -%}
+    <li>
+      <a href="{{ link }}" style="color: black; text-decoration: none">
+        <span style="background-color: {{ bgcolor }}">
+          {{ name }}
+        </span>
+      </a>
+    </li>
+{% endfor %}
+  </ul>
+  </body>
+</html>

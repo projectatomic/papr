@@ -60,13 +60,10 @@ def create_index(dirpath, at_top):
                 index = 'index.html'
             files[name] = name + index
 
-    tpl_fname = dirname(realpath(__file__)) + '/index.j2'
+    tpl_fname = join(dirname(realpath(__file__)), 'index.j2')
     # Render the template to index.html
     with open(tpl_fname, 'r') as tplf:
-        tpl = jinja2.Template(
-            tplf.read(),
-            extensions=['jinja2.ext.i18n'],
-            autoescape=True)
+        tpl = jinja2.Template(tplf.read(), autoescape=True)
 
         with open(join(dirpath, "index.html"), 'w') as f:
             f.write(tpl.render(files=files, at_top=at_top))

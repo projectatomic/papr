@@ -121,7 +121,7 @@ provision_cluster() {
 }
 
 prepare_env() {
-    local upload_dir=$state/$github_commit.$state_idx.$RANDOM
+    local upload_dir=$state/$github_commit.$state_idx.$(date +%s%N)
     echo $upload_dir > $state/upload_dir
     mkdir $upload_dir
 
