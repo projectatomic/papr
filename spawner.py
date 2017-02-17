@@ -5,7 +5,7 @@
 
 import os
 import sys
-import random
+import time
 import traceback
 import threading
 import subprocess
@@ -184,7 +184,8 @@ def update_required_context(suites):
     s3_key = '%s/%s/%s.%s/%s' % (os.environ['s3_prefix'],
                                  os.environ['github_repo'],
                                  os.environ['github_commit'],
-                                 random.randint(0, 2**15-1),
+                                 # rough equivalent of date +%s%N
+                                 int(time.time() * 1e9),
                                  'index.html')
 
     with open(tpl_fname) as tplf:
