@@ -5,6 +5,23 @@ testing some Project Atomic repositories. It is similar in
 workflow to Travis CI, but has an emphasis on enabling test
 environments useful for the Project Atomic effort.
 
+### Interacting with redhat-ci
+
+There are two indepenent (but interacting) systems.  First,
+`redhat-ci` currently uses the [Jenkins PR builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin).
+If you want the bot to rerun the per-pull request tests, type
+`bot, retest this please`.
+
+The second major (optional, but recommended) system
+is [our instance of](https://homu-projectatomic-ci.svc.ci.openshift.org/) the
+upstream [Homu](https://github.com/servo/homu/) project. Your primary commands
+will be:
+
+ - `@rh-atomic-bot r+ <commit sha>`: Start a merge, which will rebase the PR on git master, and will *rerun* the tests
+ - `@rh-atomic-bot retry`: Use this if a merge fails, and you want to retest it.
+
+### More details about redhat-ci
+
 Configured projects have a `.redhat-ci.yml` file located in
 their repositories, detailing how to provision the
 environment and which tests should be run. A sample YAML
