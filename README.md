@@ -7,7 +7,7 @@ environments useful for the Project Atomic effort.
 
 ### Interacting with redhat-ci
 
-There are two indepenent (but interacting) systems.  First,
+There are two independent (but interacting) systems.  First,
 `redhat-ci` currently uses the [Jenkins PR builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin).
 If you want the bot to rerun the per-pull request tests, type
 `bot, retest this please`.
