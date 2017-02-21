@@ -33,6 +33,7 @@ Projects currently monitored are:
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 - [projectatomic/atomic](https://github.com/projectatomic/atomic)
+- [projectatomic/atomic-host-tests](http://github.com/projectatomic/atomic-host-tests)
 - [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
 - [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
 - [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
