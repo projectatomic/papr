@@ -173,8 +173,15 @@ def update_required_context(suites):
     results_suites = []
     for i, suite in enumerate(suites):
         name = suite['context']
-        with open("state/suite-%d/url" % i) as f:
-            url = f.read().strip()
+        if os.path.isfile("state/suite-%d/url" % i):
+            with open("state/suite-%d/url" % i) as f:
+                url = f.read().strip()
+        else:
+            # Something went really wrong in the tester. Just link back to the
+            # branch for now, though we should probably just capture the same
+            # text we used to update the commit status.
+            url = ('https://github.com/%s/commits/%s' %
+                   (os.environ['github_repo'], os.environ['github_branch']))
         result = (suite['rc'] == 0)
         results_suites.append((name, result, url))
 
