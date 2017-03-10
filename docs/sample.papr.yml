@@ -105,13 +105,12 @@ context: 'CI Tester'
 
 # OPTIONAL
 # Mark this testsuite as required. This causes a special
-# "required" context to be reported to GitHub on branch
-# tests. The result is set to successful only if all
-# testsuites marked as required are also successful. This is
-# useful for integration with merge bots, so that they only
-# need to watch for a single status rather than multiple
-# (possibly changing) statuses. If omitted, defaults to
-# false.
+# "required" context to be reported to GitHub. The result is
+# set to successful only if all testsuites marked as
+# required are also successful. This is useful for grouping
+# statuses under a single context to be used by the branch
+# protection settings or by a merge bot, rather than dealing
+# with multiple (possibly changing) statuses.
 required: true
 
 # OPTIONAL
