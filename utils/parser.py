@@ -187,7 +187,7 @@ def flush_suite(suite, outdir):
     if 'env' in suite:
         envs = ''
         for k, v in suite['env'].items():
-            envs += 'export %s=%s\n' % (k, shlex.quote(v))
+            envs += 'export %s=%s\n' % (k, v)
         write_to_file(outdir, "envs", envs)
 
     if 'build' in suite:
