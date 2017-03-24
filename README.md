@@ -36,6 +36,7 @@ Projects currently monitored are:
 - [projectatomic/atomic-host-tests](http://github.com/projectatomic/atomic-host-tests)
 - [projectatomic/atomic-system-containers](https://github.com/projectatomic/atomic-system-containers)
 - [projectatomic/bubblewrap](https://github.com/projectatomic/bubblewrap)
+- [projectatomic/buildah](https://github.com/projectatomic/buildah)
 - [projectatomic/bwrap-oci](https://github.com/projectatomic/bwrap-oci)
 - [projectatomic/commissaire](https://github.com/projectatomic/commissaire)
 - [projectatomic/commissaire-http](https://github.com/projectatomic/commissaire-http)
