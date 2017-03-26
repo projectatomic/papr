@@ -424,10 +424,16 @@ s3_upload() {
 
         local full_prefix=$s3_prefix/$github_repo/$(basename $upload_dir)
 
-        # upload logs separately so that we can set the MIME type properly
+        # Upload logs separately so that we can set the MIME type properly.
+        # Let's just always label the logs as UTF-8. If the data is not strict
+        # ISO-8859-1, then it won't render properly anyway. If it's (even if
+        # partially) UTF-8, then we made the best choice. If it's random
+        # garbage, we're no worse off (plus, UTF-8 is pretty good at handling
+        # that).
         aws s3 sync --exclude '*.log' \
             $upload_dir s3://$full_prefix
-        aws s3 sync --exclude '*' --include '*.log' --content-type text/plain \
+        aws s3 sync --exclude '*' --include '*.log' \
+            --content-type 'text/plain; charset=utf-8' \
             $upload_dir s3://$full_prefix
 
         # full address we'll use for the final commit status update

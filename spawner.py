@@ -114,6 +114,8 @@ def spawn_testrunners(n):
 
 
 def read_pipe(idx, fd):
+    # NB: We can't trust the output from the testrunner, so
+    # just read it and write it back in binary mode.
     s = fd.readline()
     while s != b'':
         if not s.endswith(b'\n'):

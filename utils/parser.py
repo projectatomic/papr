@@ -27,25 +27,38 @@ class SuiteParser:
     def __init__(self, filepath):
         self.contexts = []
         self.met_required = False
-        self.filepath = filepath
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                filedata = f.read()
+
+            # use CSafeLoader, because the default loader arbitrarily thinks
+            # code points >= 0x10000 (like 🐄) are not valid:
+            # https://bitbucket.org/xi/pyyaml/issues/26
+            yaml.SafeLoader = yaml.CSafeLoader
+
+            # collapse generator to a list to force scanning of all the
+            # documents and catch any invalid YAML syntax right away
+            self.raw_suites = list(yaml.safe_load_all(filedata))
+
+        # catch exceptions due to a bad YAML and transform into ParserError
+        except UnicodeDecodeError:
+            raise ParserError("file is not valid UTF-8")
+        except yaml.scanner.ScannerError as e:
+            raise ParserError("file could not be parsed as valid YAML")
 
     def parse(self):
         "Generator of testsuites parsed from the given YAML file."
 
         suite = None
-        with open(self.filepath) as f:
-            for idx, raw_yaml in enumerate(yaml.safe_load_all(f.read())):
-                try:
-                    suite = self._merge(suite, raw_yaml)
-                    self._validate(suite)
-                    yield dict(suite)
-                except SchemaError as e:
-                    # if it happens on the very first document, let's
-                    # just give the exact error directly
-                    if idx == 0:
-                        raise e
-                    raise ParserError("failed to parse %s testsuite"
-                                      % common.ordinal(idx + 1)) from e
+        for idx, raw_suite in enumerate(self.raw_suites):
+            try:
+                suite = self._merge(suite, raw_suite)
+                self._validate(suite)
+                yield dict(suite)
+            # tell users which suite exactly caused the error
+            except ParserError as e:
+                raise ParserError("failed to parse %s testsuite: %s"
+                                  % (common.ordinal(idx + 1), e.msg))
 
     def _merge(self, suite, new):
         "Merge the next document into the current one."
@@ -95,8 +108,14 @@ class SuiteParser:
 
         schema = os.path.join(sys.path[0], "utils/schema.yml")
         ext = os.path.join(sys.path[0], "utils/ext_schema.py")
-        c = Core(source_data=suite, schema_files=[schema], extensions=[ext])
-        c.validate()
+
+        try:
+            c = pykwalify.core.Core(source_data=suite,
+                                    schema_files=[schema],
+                                    extensions=[ext])
+            c.validate()
+        except pykwalify.errors.PyKwalifyException as e:
+            raise ParserError(e.msg)
 
         if suite['context'] in self.contexts:
             raise ParserError("duplicate 'context' value detected")
@@ -110,9 +129,15 @@ class SuiteParser:
         self.contexts.append(suite['context'])
 
 
-def _write_to_file(dir, fn, s):
-    with open(os.path.join(dir, fn), 'w') as f:
-        f.write(s)
+def _write_to_file(dir, fn, s, utf8=False):
+    try:
+        enc = 'utf-8' if utf8 else 'ascii'
+        with open(os.path.join(dir, fn), 'w', encoding=enc) as f:
+            f.write(s)
+    except UnicodeEncodeError:
+        # this can only happen if trying to encode in ascii
+        # a value which contains non-ASCII chars in the YAML
+        raise ParserError("non-ASCII characters found in ASCII-only field")
 
 
 def _flush_host(host, outdir):
@@ -167,7 +192,7 @@ def flush_suite(suite, outdir):
         _write_to_file(outdir, 'envtype', 'cluster')
 
     if 'tests' in suite:
-        _write_to_file(outdir, "tests", '\n'.join(suite['tests']))
+        _write_to_file(outdir, "tests", '\n'.join(suite['tests']), utf8=True)
 
     _write_to_file(outdir, "branches",
                    '\n'.join(suite.get('branches', ['master'])))
@@ -198,8 +223,10 @@ def flush_suite(suite, outdir):
     if 'env' in suite:
         envs = ''
         for k, v in suite['env'].items():
+            # NB: the schema already ensures that k is ASCII
+            # only, so utf8=True will only affect the value
             envs += 'export %s="%s"\n' % (k, v)
-        _write_to_file(outdir, "envs", envs)
+        _write_to_file(outdir, "envs", envs, utf8=True)
 
     if 'build' in suite:
         v = suite['build']
