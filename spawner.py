@@ -18,7 +18,7 @@ from pykwalify.errors import SchemaError
 
 import utils.parser as parser
 import utils.common as common
-import utils.ghupdate as ghupdate
+import utils.gh as gh
 
 
 def main():
@@ -27,11 +27,11 @@ def main():
     try:
         suites = parse_suites()
     except ScannerError:
-        update_gh('error', "Red Hat CI", "YAML syntax error.")
+        gh_status('error', "Red Hat CI", "YAML syntax error.")
     except SchemaError as e:
         # print the error to give feedback in the logs, but exit nicely
         traceback.print_exc()
-        update_gh('error', "Red Hat CI", "YAML semantic error.")
+        gh_status('error', "Red Hat CI", "YAML semantic error.")
     else:
         n = len(suites)
         if n > 0:
@@ -203,11 +203,11 @@ def update_required_context(suites):
     url = 'https://s3.amazonaws.com/%s' % s3_key
 
     failed = count_failures(required_suites)
-    update_gh('success' if failed == 0 else 'failure', 'required',
+    gh_status('success' if failed == 0 else 'failure', 'required',
               "%d/%d PASSES" % (total - failed, total), url)
 
 
-def update_gh(state, context, description, url=None):
+def gh_status(state, context, description, url=None):
 
     try:
         args = {'repo': os.environ['github_repo'],
@@ -218,17 +218,27 @@ def update_gh(state, context, description, url=None):
                 'description': description,
                 'url': url}
 
-        ghupdate.send(**args)
+        gh.status(**args)
 
         if os.path.isfile('state/is_merge_sha'):
             with open('state/sha') as f:
                 args['commit'] = f.read().strip()
-            ghupdate.send(**args)
+            gh.status(**args)
 
     # it can happen that the commit doesn't even exist
     # anymore, so let's be tolerant of such errors
-    except ghupdate.CommitNotFoundException:
+    except gh.CommitNotFoundException:
         pass
+
+
+def gh_comment(text):
+
+    args = {'repo': os.environ['github_repo'],
+            'token': os.environ['github_token'],
+            'issue': int(os.environ['github_pull_id']),
+            'text': text}
+
+    gh.comment(**args)
 
 
 def upload_to_s3(bucket_key, data, type):

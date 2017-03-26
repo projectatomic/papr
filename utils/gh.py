@@ -24,8 +24,8 @@ def _main():
     "Main entry point."
 
     args = _parse_args()
-    send(args.repo, args.commit, args.token, args.state,
-         args.context, args.description, args.url)
+    status(args.repo, args.commit, args.token, args.state,
+           args.context, args.description, args.url)
 
 
 def _parse_args():
@@ -67,7 +67,8 @@ def _parse_args():
     return args
 
 
-def send(repo, commit, token, state, context=None, description=None, url=None):
+def status(repo, commit, token, state,
+           context=None, description=None, url=None):
     data = _craft_data_dict(state, context, description, url)
     _update_status(repo, commit, token, data)
 
@@ -107,6 +108,29 @@ def _update_status(repo, commit, token, data):
             raise CommitNotFoundException()
 
         # Some other error happened.
+        errmsg = "Failed to update commit status [HTTP %d]" % resp.status_code
+        errmsg += "\n" + str(resp.headers)
+        if body is not None:
+            errmsg += "\n" + str(body)
+        raise Exception(errmsg)
+
+
+# XXX: add CLI support and deduplicate with status()
+def comment(repo, token, issue, text):
+    "Creates a comment using the GitHub API."
+
+    token_header = {'Authorization': 'token ' + token}
+    api_url = ("https://api.github.com/repos/%s/issues/%d/comments" %
+               (repo, issue))
+
+    data = {'body': text}
+
+    # use data= instead of json= in case we're running on an older requests
+    resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
+    body = resp.json()
+
+    # pylint: disable=no-member
+    if resp.status_code != requests.codes.created:
         errmsg = "Failed to update commit status [HTTP %d]" % resp.status_code
         errmsg += "\n" + str(resp.headers)
         if body is not None:
