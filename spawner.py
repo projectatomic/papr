@@ -13,8 +13,6 @@ from os.path import dirname, realpath
 
 import boto3
 import jinja2
-from yaml.scanner import ScannerError
-from pykwalify.errors import SchemaError
 
 import utils.parser as parser
 import utils.common as common
@@ -26,12 +24,11 @@ def main():
 
     try:
         suites = parse_suites()
-    except ScannerError:
-        gh_status('error', "Red Hat CI", "YAML syntax error.")
-    except SchemaError as e:
-        # print the error to give feedback in the logs, but exit nicely
+    except parser.ParserError as e:
+        # print the error to give feedback in the logs, but
+        # exit nicely since this is not an infra failure
         traceback.print_exc()
-        gh_status('error', "Red Hat CI", "YAML semantic error.")
+        gh_status('error', "Red Hat CI", "Invalid YAML file.")
     else:
         n = len(suites)
         if n > 0:

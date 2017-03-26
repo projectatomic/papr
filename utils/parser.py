@@ -5,10 +5,21 @@ import sys
 import yaml
 import shlex
 
+import pykwalify.core
+import pykwalify.errors
+
 import utils.common as common
 
-from pykwalify.core import Core
-from pykwalify.errors import SchemaError
+
+class ParserError(SyntaxError):
+    '''
+        Handle all errors caused by a bad RHCI file by
+        throwing a ParserError. This allows clients to
+        differentiate between infra errors and bad user
+        input. We inherit from SyntaxError for the msg
+        field.
+    '''
+    pass
 
 
 class SuiteParser:
@@ -33,14 +44,14 @@ class SuiteParser:
                     # just give the exact error directly
                     if idx == 0:
                         raise e
-                    raise SchemaError("failed to parse %s testsuite"
+                    raise ParserError("failed to parse %s testsuite"
                                       % common.ordinal(idx + 1)) from e
 
     def _merge(self, suite, new):
         "Merge the next document into the current one."
 
         if type(new) is not dict:
-            raise SyntaxError("top-level type should be a dict")
+            raise ParserError("top-level type should be a dict")
 
         if suite is None:
 
@@ -51,7 +62,7 @@ class SuiteParser:
                 new['context'] = "Red Hat CI"
 
         if 'inherit' in new and type(new['inherit']) is not bool:
-            raise SyntaxError("expected 'bool' value for 'inherit' key")
+            raise ParserError("expected 'bool' value for 'inherit' key")
 
         # if we're not inheriting, then let's just return the new suite itself
         if suite is None or not new.get('inherit', False):
@@ -88,12 +99,12 @@ class SuiteParser:
         c.validate()
 
         if suite['context'] in self.contexts:
-            raise SchemaError("duplicate 'context' value detected")
+            raise ParserError("duplicate 'context' value detected")
 
         self.met_required = self.met_required or suite.get('required', False)
 
         if suite['context'] == "required" and self.met_required:
-            raise SchemaError('context "required" forbidden when using the '
+            raise ParserError('context "required" forbidden when using the '
                               "'required' key")
 
         self.contexts.append(suite['context'])
