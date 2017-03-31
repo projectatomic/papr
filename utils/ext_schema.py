@@ -39,6 +39,8 @@ def ext_hosts(value, rule_obj, path):
             raise SchemaError("host %d is not a dict" % i)
         if 'name' not in host:
             raise SchemaError("host %d missing key 'name'" % i)
+        if 'distro' not in host:
+            raise SchemaError("host %d missing key 'distro'" % i)
         if not _valid_hostname(host['name']):
             raise SchemaError("invalid hostname for host %d" % i)
         if 'ostree' in host:
