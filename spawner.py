@@ -29,7 +29,7 @@ def main():
         # exit nicely since this is not an infra failure
         traceback.print_exc()
         gh_status('error', "Red Hat CI", "Invalid YAML file.")
-        if 'github_pull_id' in os.environ:
+        if os.environ.get('github_pull_id'):
             gh_comment(':boom: Invalid `.redhat-ci.yml`: {}.'.format(e.msg))
     else:
         n = len(suites)
