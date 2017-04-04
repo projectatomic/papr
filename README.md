@@ -13,7 +13,7 @@ If you want the bot to rerun the per-pull request tests, type
 `bot, retest this please`.
 
 The second major (optional, but recommended) system
-is [our instance of](https://homu-projectatomic-ci.svc.ci.openshift.org/) the
+is [our instance of](https://homu-projectatomic-ci-infra.e8ca.engint.openshiftapps.com/) the
 upstream [Homu](https://github.com/servo/homu/) project. Your primary commands
 will be:
 
