@@ -80,25 +80,16 @@ deploy_ostree() {
             refspec="${refspec}$branch"
         fi
 
-        if ! vmssh rpm-ostree rebase "$refspec"; then
+        if [ -z "$revision" ]; then
+            vmssh rpm-ostree rebase "$refspec" || rc=$?
+        else
+            vmssh rpm-ostree rebase "$refspec" "$revision" || rc=$?
+        fi
+
+        if [ $rc != 0 ]; then
             update_github error "Failed to rebase onto refspec."
             touch $state/exit # signal testrunner to exit nicely
             exit 0
-        fi
-
-        if [ -n "$revision" ]; then
-            # we should really be able to do this in a single step
-            # https://github.com/projectatomic/rpm-ostree/issues/212
-            vmreboot
-            vmssh rpm-ostree deploy "$revision" || rc=$?
-
-            if [ $rc == 77 ]; then
-                skip_reboot=1
-            elif [ $rc != 0 ]; then
-                update_github error "Failed to upgrade or deploy."
-                touch $state/exit # signal testrunner to exit nicely
-                exit 0
-            fi
         fi
     fi
 
