@@ -1,6 +1,6 @@
-python-novaclient
-PyYAML
-jinja2
-awscli
-pykwalify
-boto3
+python-novaclient==7.1.0
+PyYAML==3.12
+jinja2==2.9.6
+awscli==1.11.72
+pykwalify==1.6.0
+boto3==1.4.4
