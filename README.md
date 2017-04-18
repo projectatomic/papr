@@ -31,6 +31,7 @@ file with allowed keys can be found
 Projects currently monitored are:
 
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
+- [openshift/openshift-ansible](https://github.com/openshift/openshift-ansible)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 - [projectatomic/atomic](https://github.com/projectatomic/atomic)
 - [projectatomic/atomic-host-tests](http://github.com/projectatomic/atomic-host-tests)
