@@ -36,10 +36,25 @@ nova = client.Client(2, auth_url=os.environ['OS_AUTH_URL'],
 print("INFO: authenticating")
 nova.authenticate()
 
+# XXX: DIRTY HACK UNTIL WE DO THIS PROPERLY
+# We should move towards site-specific configurations being
+# provided in e.g. a config.yaml file, with all the
+# supported distros/images, so that we can do the
+# translation ourselves.
+hacky_map = {
+    'fedora/25/cloud/nightly': 'Fedora-Cloud-Base-25-compose-latest',
+    'fedora/25/atomic/nightly': 'Fedora-Atomic-25-compose-latest',
+    'fedora/26/cloud/nightly': 'Fedora-Cloud-Base-26-nightly-latest',
+}
+image_name = os.environ['os_image']
+if image_name in hacky_map:
+    image_name = hacky_map[image_name]
+# XXX: END DIRTY HACK
+
 # it's possible multiple images match, e.g. during automated
 # image uploads, in which case let's just pick the first one
-print("INFO: resolving image '%s'" % os.environ['os_image'])
-image = nova.images.findall(name=os.environ['os_image'])[0]
+print("INFO: resolving image '%s'" % image_name)
+image = nova.images.findall(name=image_name)[0]
 
 # go through all the flavours and determine which one to use
 min_ram = int(os.environ['os_min_ram'])
