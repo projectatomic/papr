@@ -709,7 +709,7 @@ host_controlled() {
 }
 
 on_atomic_host() {
-    ! containerized && vmssh test -f /run/ostree-booted
+    host_controlled && vmssh test -f /run/ostree-booted
 }
 
 main "$@"
