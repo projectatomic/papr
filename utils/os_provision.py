@@ -142,6 +142,8 @@ while server.status == 'BUILD':
 
 if server.status != 'ACTIVE':
     print("ERROR: server is not ACTIVE (state: %s)" % server.status)
+    print("ERROR: deleting server")
+    server.delete()
     sys.exit(1)
 
 ip = server.networks[network.label][0]
