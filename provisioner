@@ -24,13 +24,21 @@ main() {
 
 provision_host() {
 
+    # include the BUILD_ID directly in the name to make it
+    # easier to determine which nodes belong to which runs
+    # when troubleshooting
+    os_name_prefix=github-ci-testnode
+    if [ -n "${BUILD_ID:-}" ]; then
+        os_name_prefix=$os_name_prefix-$BUILD_ID
+    fi
+
     env \
         os_image="$(cat $parsedhost/distro)" \
         os_min_ram=$(cat $parsedhost/min_ram) \
         os_min_vcpus=$(cat $parsedhost/min_cpus) \
         os_min_disk=$(cat $parsedhost/min_disk) \
         os_min_ephemeral=$(cat $parsedhost/min_secondary_disk) \
-        os_name_prefix=github-ci-testnode \
+        os_name_prefix=$os_name_prefix \
         os_user_data="$THIS_DIR/utils/user-data" \
         "$THIS_DIR/utils/os_provision.py" $outdir
 
