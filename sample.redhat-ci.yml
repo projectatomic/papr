@@ -12,17 +12,12 @@ host:
     #   - fedora/24/cloud
     #   - fedora/24/atomic
     #   - fedora/25/cloud
-    #   - fedora/25/cloud/nightly
     #   - fedora/25/atomic
-    #   - fedora/25/atomic/nightly
     #   - fedora/latest/atomic
-    #   - fedora/26/cloud/nightly
     #   - centos/7/cloud
     #   - centos/7/atomic
     #   - centos/7/atomic/alpha
     #   - centos/7/atomic/continuous
-    #   - rhel/7/atomic
-    #   - rhel/7/atomic/stage
     distro: centos/7/atomic
 
     # OPTIONAL
