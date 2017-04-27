@@ -30,6 +30,7 @@ file with allowed keys can be found
 
 Projects currently monitored are:
 
+- [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
 - [openshift/openshift-ansible](https://github.com/openshift/openshift-ansible)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
