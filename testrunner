@@ -214,8 +214,19 @@ ssh_setup_cluster() {
         # some of these could be redone more cleanly through
         # cloud-init, though the dynamic aspect would
         # probably end up making it look similar
+
         vmipssh $addr hostnamectl set-hostname $name
-        vmipssh $addr "cat >> /etc/hosts" < $state/hosts
+
+        # we don't want to inject the public ip of this host
+        # into its hosts file since programs might be
+        # confused to see the hostname resolve to an address
+        # that's not assigned to any of its interfaces. no
+        # need to inject the private ip in its stead either;
+        # the myhostname nss module already does the right
+        # thing for us
+        sed "/^${addr//./\\.} / d" $state/hosts | \
+            vmipssh $addr "cat >> /etc/hosts"
+
         vmipssh $addr "cat >> /root/.ssh/known_hosts" < $state/known_hosts
         vmipssh $addr "cat > /root/.ssh/id_rsa" < cluster_keypair/id_rsa
         vmipssh $addr chmod 0400 /root/.ssh/id_rsa
