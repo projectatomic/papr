@@ -45,6 +45,7 @@ Projects currently monitored are:
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
 - [projectatomic/container-storage-setup](https://github.com/projectatomic/container-storage-setup)
 - [projectatomic/docker](https://github.com/projectatomic/docker)
+- [projectatomic/registries](https://github.com/projectatomic/registries)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
 
 **If you would like to have a repository added, please open
