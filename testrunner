@@ -145,6 +145,19 @@ prepare_env() {
 
     envcmd mkdir /var/tmp/checkout
     envcp checkouts/$github_repo/. /var/tmp/checkout
+
+    # inject some helpful variables to allow projects to
+    # more tightly integrate with redhat-ci
+    echo "export RHCI_REPO=${github_repo}" >> $state/parsed/envs
+    echo "export RHCI_COMMIT=${github_commit}" >> $state/parsed/envs
+    if [ -n "${github_branch:-}" ]; then
+        echo "export RHCI_BRANCH=${github_branch}" >> $state/parsed/envs
+    else
+        echo "export RHCI_PULL_ID=${github_pull_id}" >> $state/parsed/envs
+        if [ -f state/is_merge_sha ]; then
+            echo "export RHCI_MERGE_COMMIT=$(cat state/sha)" >> $state/parsed/envs
+        fi
+    fi
 }
 
 ssh_setup_key() {
