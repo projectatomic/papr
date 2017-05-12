@@ -72,6 +72,9 @@ checkout_ref() {
     # pollute these repos, we just rsync them)
     if [ ! -d $repo ]; then
         git clone https://github.com/$github_repo $repo
+    else
+        # update the origin refs for projects that expect a fresh clone
+        git -C $repo fetch origin
     fi
 
     local sha_cmp
@@ -101,7 +104,7 @@ checkout_ref() {
         export github_commit=$sha_cmp
     fi
 
-    git -C $repo reset --hard FETCH_HEAD
+    git -C $repo checkout FETCH_HEAD
     git -C $repo rev-parse HEAD > state/sha
 }
 
