@@ -125,6 +125,11 @@ prepare_env() {
     echo $upload_dir > $state/upload_dir
     mkdir $upload_dir
 
+    # https://github.com/projectatomic/rpm-ostree/issues/687
+    if ! on_atomic_host; then
+        env_make_rpmmd_cache
+    fi
+
     # inject extra repos before installing packages
     if [ -f $state/parsed/rhci-extras.repo ]; then
         envcmd mkdir -p /etc/yum.repos.d
@@ -200,7 +205,6 @@ ssh_setup_cluster() {
     if container_controlled; then
         # most base images don't have ssh
         if ! envcmd [ -x /bin/ssh ]; then
-            env_make_cache
             envcmd yum install -y openssh-clients
         fi
         envcmd mkdir -m 0600 /root/.ssh
@@ -270,12 +274,10 @@ overlay_packages() {
 install_packages() {
     local upload_dir=$(cat $state/upload_dir)
 
-    mgr=yum
+    local mgr=yum
     if envcmd rpm -q dnf; then
         mgr=dnf
     fi
-
-    env_make_cache
 
     local rc=0
     logged_envcmd $upload_dir/setup.log / - - \
@@ -288,18 +290,67 @@ install_packages() {
     fi
 }
 
-env_make_cache() {
+env_make_rpmmd_cache() {
+    local os_id=$(get_env_os_info ID)
+    local os_version_id=$(get_env_os_info VERSION_ID)
 
-    # This is hacky and sad. Preemptively try to refresh
-    # yum/dnf cache to work around flaky distro infras.
+    local cachedir=
+    if [ -n "$os_id" ] && [ -n "$os_version_id" ]; then
+        cachedir="cache/rpmmd/$os_id/$os_version_id"
+    fi
 
+    local mgr=yum
+    if envcmd rpm -q dnf; then
+        mgr=dnf
+    fi
+
+    # inject cache if we have it
+    if [ -n "$cachedir" ] && [ -d "$cachedir" ]; then
+        envcmd mkdir -p /var/cache/$mgr
+        envcp "$cachedir/." /var/cache/$mgr
+    fi
+
+    # update the cache
+    local has_cache=0
     local retries=5
     while [ $retries -gt 0 ]; do
-        if envcmd yum makecache; then
+        if envcmd $mgr makecache; then
+            has_cache=1
             break
         fi
         retries=$((retries - 1))
     done
+
+    if [ $has_cache == 0 ]; then
+        update_github error "Could not makecache."
+        exit 0
+    fi
+
+    local can_trust_cache=0
+    if host_controlled; then
+        can_trust_cache=1 # we trust all the distros we offer ourselves
+    else
+        # only trust official containers
+        local image=$(cat $state/parsed/image)
+        if grep -q -E '^registry.fedoraproject.org' <<< "$image" ||
+           grep -q -E '^(fedora|centos)(:[[:alnum:]_.-]+)?$' <<< "$image"; then
+            can_trust_cache=1
+        fi
+    fi
+
+    # update our own cache with the updated cache
+    if [ -n "$cachedir" ] && [ $can_trust_cache == 1 ]; then
+        mkdir -p "$cachedir"
+        envfetch /var/cache/$mgr/. "$cachedir"
+
+        # but only keep non-system solvs & repodata
+        # NB: yum only keeps repo metadata there, so no need to prune
+        if [ $mgr == dnf ]; then
+            find "$cachedir" -maxdepth 1 \
+                ! -type d ! -name '*.solv' ! -name '*.solvx' -delete
+            rm -f "$cachedir/@System.solv"
+        fi
+    fi
 }
 
 run_loop() {
@@ -401,6 +452,11 @@ fetch_artifacts() {
             while IFS='' read -r artifact || [[ -n $artifact ]]; do
                 path="/var/tmp/checkout/$artifact"
                 if vmssh [ -e "$path" ]; then
+                    # NB: We could use rsync here to be more efficient, though
+                    # we need the --ignore-missing-args switch, which is not
+                    # available on older platforms. Anyway, in this case, we're
+                    # always fetching from scratch and the test envs are not
+                    # far, so scp shouldn't be much slower.
                     vmscp -r "root@$node_addr:$path" $upload_dir/artifacts
                     fetched_at_least_one=1
                 fi
@@ -617,6 +673,24 @@ envcp() {
     fi
 }
 
+envfetch() {
+    remote=$1; shift
+    target=$1; shift
+
+    if container_controlled; then
+        local cid=$(cat $state/cid)
+        sudo docker cp $cid:$remote $target
+    else
+        local node_addr=$(cat $state/host/node_addr)
+        rsync --quiet -az --no-owner --no-group \
+            -e "ssh -q -i $state/node_key \
+                       -o StrictHostKeyChecking=no \
+                       -o PasswordAuthentication=no \
+                       -o UserKnownHostsFile=/dev/null" \
+            root@$node_addr:$remote $target
+    fi
+}
+
 vmssh() {
     # NB: we use -n because stdin may be in use (e.g. in a
     # bash while read loop)
@@ -734,6 +808,10 @@ host_controlled() {
 
 on_atomic_host() {
     host_controlled && vmssh test -f /run/ostree-booted
+}
+
+get_env_os_info() {
+    (. <(envcmd cat /etc/os-release) && echo ${!1} || :)
 }
 
 main "$@"
