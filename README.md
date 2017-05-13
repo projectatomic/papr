@@ -83,6 +83,13 @@ The following optional environment vars may be set:
   the same OpenStack network as the node.
 - `s3_prefix` -- If specified, artifacts will be uploaded to
   this S3 path, in `<bucket>[/<prefix>]` form.
+- `site_repos` -- If specified, pipe-separated list of
+  repo files to inject. Each entry specifies the OS it is
+  valid for. E.g.:
+
+```
+centos/7=http://example.com/centos.repo|fedora/*=repos/fedora.repo
+```
 
 If you want to support virtualized tests, it also implicitly
 expects the usual OpenStack variables needed for

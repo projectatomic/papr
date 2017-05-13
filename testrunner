@@ -310,6 +310,44 @@ env_make_rpmmd_cache() {
         envcp "$cachedir/." /var/cache/$mgr
     fi
 
+    if [ -n "${site_repos:-}" ]; then
+        local OLDIFS=$IFS; IFS='|'
+        mkdir -p $state/site-repos
+        for site_repo in $site_repos; do
+            local repo_file=${site_repo#*=}
+            local target_os=${site_repo%=*}
+            local target_os_id=${target_os%/*}
+            local target_os_version_id=${target_os#*/}
+
+            [ -n "$repo_file" ]
+            [ -n "$target_os_id" ]
+            [ -n "$target_os_version_id" ]
+
+            if [ "$target_os_id" != '*' ] &&
+                ([ -z "$os_id" ] ||
+                 [ "$target_os_id" != "$os_id" ]); then
+                    continue
+            fi
+
+            if [ "$target_os_version_id" != '*' ] &&
+                ([ -z "$os_version_id" ] ||
+                 [ "$target_os_version_id" != "$os_version_id" ]); then
+                    continue
+            fi
+
+            if [ "${repo_file::7}" == "http://" ] ||
+               [ "${repo_file::8}" == "https://" ]; then
+                (cd $state/site-repos && curl -LO "$repo_file")
+            else # assume local
+                cp -f $repo_file $state/site-repos
+            fi
+        done
+        IFS=$OLDIFS
+
+        envcmd mkdir -p /etc/yum.repos.d
+        envcp $state/site-repos/. /etc/yum.repos.d
+    fi
+
     # update the cache
     local has_cache=0
     local retries=5
