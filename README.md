@@ -3,7 +3,13 @@
 `redhat-ci` is a simple framework currently in use for CI
 testing some Project Atomic repositories. It is similar in
 workflow to Travis CI, but has an emphasis on enabling test
-environments useful for the Project Atomic effort.
+environments useful for the Project Atomic effort. Only
+Fedora and CentOS-based test environments are supported for
+now.
+
+See the full list of projects currently monitored below.
+**If you would like to have a repository added, please open
+a pull request to update the list.**
 
 ### Interacting with redhat-ci
 
