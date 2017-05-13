@@ -42,6 +42,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e os_network \
              -e os_floating_ip_pool \
              -e s3_prefix \
+             -e site_repos \
              -e OS_AUTH_URL \
              -e OS_TENANT_ID \
              -e OS_USERNAME \
