@@ -71,6 +71,10 @@ provision_container() {
     sudo docker run -d \
         --cidfile $state/cid \
         "$image" sleep infinity
+
+    if [ $UID != 0 ]; then
+        sudo chown $UID:$UID $state/cid
+    fi
 }
 
 provision_node() {
@@ -511,7 +515,13 @@ fetch_artifacts() {
         fi
 
         if [ $fetched_at_least_one == 0 ]; then
+            # we don't want it indexed if it's empty
             rm -rf $upload_dir/artifacts
+        else
+            # make sure indexer can access artifacts; docker copies as root
+            if [ $UID != 0 ] && container_controlled; then
+                sudo chown -R $UID:$UID $upload_dir/artifacts
+            fi
         fi
     fi
 }
