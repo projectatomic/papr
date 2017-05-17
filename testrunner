@@ -152,7 +152,7 @@ prepare_env() {
         ssh_setup_cluster
     fi
 
-    envcmd mkdir /var/tmp/checkout
+    envcmd mkdir -p /var/tmp/checkout
     envcp checkouts/$github_repo/. /var/tmp/checkout
 
     # inject some helpful variables to allow projects to
@@ -202,7 +202,7 @@ ssh_setup_cluster() {
     if [ ! -f cluster_keypair/id_rsa ]; then
         # let's just stick with RSA since it's supported on
         # all platforms
-        mkdir -p cluster_keypair
+        mkdir cluster_keypair
         ssh-keygen -t rsa -b 4096 -N "" -f cluster_keypair/id_rsa
     fi
 
@@ -386,7 +386,7 @@ env_make_rpmmd_cache() {
     # update our own cache with the updated cache
     if [ -n "$cachedir" ] && [ $can_trust_cache == 1 ]; then
 
-        mkdir -p "$cachedir"
+        mkdir -p "$state/$cachedir"
         envfetch /var/cache/$mgr/. "$state/$cachedir"
 
         # but only keep non-system solvs & repodata
