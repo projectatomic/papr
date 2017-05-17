@@ -311,7 +311,10 @@ env_make_rpmmd_cache() {
     # inject cache if we have it
     if [ -n "$cachedir" ] && [ -d "$cachedir" ]; then
         envcmd mkdir -p /var/cache/$mgr
-        envcp "$cachedir/." /var/cache/$mgr
+        # copy under lock to the suite-local cache and rsync that
+        mkdir -p "$state/$cachedir"
+        flock --shared "$cachedir" cp -alT "$cachedir" "$state/$cachedir"
+        envcp "$state/$cachedir/." /var/cache/$mgr
     fi
 
     if [ -n "${site_repos:-}" ]; then
@@ -382,16 +385,22 @@ env_make_rpmmd_cache() {
 
     # update our own cache with the updated cache
     if [ -n "$cachedir" ] && [ $can_trust_cache == 1 ]; then
+
         mkdir -p "$cachedir"
-        envfetch /var/cache/$mgr/. "$cachedir"
+        envfetch /var/cache/$mgr/. "$state/$cachedir"
 
         # but only keep non-system solvs & repodata
         # NB: yum only keeps repo metadata there, so no need to prune
         if [ $mgr == dnf ]; then
-            find "$cachedir" -maxdepth 1 \
+            find "$state/$cachedir" -maxdepth 1 \
                 ! -type d ! -name '*.solv' ! -name '*.solvx' -delete
-            rm -f "$cachedir/@System.solv"
+            rm -f "$state/$cachedir/@System.solv"
         fi
+
+        # update global cache under lock
+        # NB: cp -l is smart enough to skip copying if the file hasn't changed
+        # (though that only works if we rsync'ed -- docker cp always overwrites)
+        flock --exclusive "$cachedir" cp -alTf "$state/$cachedir" "$cachedir"
     fi
 }
 
