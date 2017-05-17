@@ -65,7 +65,7 @@ host:
 container:
     # REQUIRED
     # Specify an FQIN or Docker Hub image.
-    image: fedora:24
+    image: registry.fedoraproject.org/fedora:25
 
 # REQUIRED (only one of 'host' or 'container' or 'cluster')
 # Provision multiple hosts.
