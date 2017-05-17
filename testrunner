@@ -400,6 +400,7 @@ env_make_rpmmd_cache() {
         # update global cache under lock
         # NB: cp -l is smart enough to skip copying if the file hasn't changed
         # (though that only works if we rsync'ed -- docker cp always overwrites)
+        mkdir -p "$cachedir"
         flock --exclusive "$cachedir" cp -alTf "$state/$cachedir" "$cachedir"
     fi
 }
