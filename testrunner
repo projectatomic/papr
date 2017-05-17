@@ -728,6 +728,10 @@ envfetch() {
     if container_controlled; then
         local cid=$(cat $state/cid)
         sudo docker cp $cid:$remote $target
+
+        if [ $UID != 0 ]; then
+            sudo chown -R $UID:$UID $target
+        fi
     else
         local node_addr=$(cat $state/host/node_addr)
         rsync --quiet -az --no-owner --no-group \
