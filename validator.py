@@ -2,7 +2,7 @@
 
 '''
     Simple script to validate a YAML file.
-    Usage: ./validator.py /my/github/project/.redhat-ci.yml
+    Usage: ./validator.py /my/github/project/.papr.yml
 '''
 
 import os

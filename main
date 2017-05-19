@@ -33,8 +33,11 @@ main() {
 
     checkout_ref
 
-    if [ ! -f checkouts/$github_repo/.redhat-ci.yml ]; then
-        echo "INFO: No .redhat-ci.yml file found."
+    # support the old name until projects migrate over
+    if [ ! -f checkouts/$github_repo/.papr.yml ] &&
+       [ ! -f checkouts/$github_repo/.papr.yaml ] &&
+       [ ! -f checkouts/$github_repo/.redhat-ci.yml ]; then
+        echo "INFO: No .papr.yml file found."
         exit 0
     fi
 

@@ -80,8 +80,8 @@ deploy_ostree() {
         local refspec=
 
         if [ -n "$remote" ]; then
-            vmssh ostree remote add --no-gpg-verify rhci "$remote"
-            refspec=rhci:
+            vmssh ostree remote add --no-gpg-verify papr "$remote"
+            refspec=papr:
         fi
 
         if [ -n "$branch" ]; then
