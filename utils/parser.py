@@ -13,7 +13,7 @@ import utils.common as common
 
 class ParserError(SyntaxError):
     '''
-        Handle all errors caused by a bad RHCI file by
+        Handle all errors caused by a bad PAPR file by
         throwing a ParserError. This allows clients to
         differentiate between infra errors and bad user
         input. We inherit from SyntaxError for the msg
@@ -209,7 +209,7 @@ def flush_suite(suite, outdir):
             for key, val in repo.items():
                 repos += "%s=%s\n" % (key, val)
         if repos != "":
-            _write_to_file(outdir, "rhci-extras.repo", repos)
+            _write_to_file(outdir, "papr-extras.repo", repos)
 
     if 'packages' in suite:
         packages = []

@@ -1,40 +1,27 @@
-### redhat-ci
+### PAPR (previously called redhat-ci)
 
-`redhat-ci` is a simple framework currently in use for CI
-testing some Project Atomic repositories. It is similar in
-workflow to Travis CI, but has an emphasis on enabling test
-environments useful for the Project Atomic effort. Only
-Fedora and CentOS-based test environments are supported for
-now.
+`PAPR` is a testing tool similar in workflow to Travis CI,
+but with an emphasis on enabling test environments useful
+for the Project Atomic effort. Only Fedora and CentOS-based
+test environments are supported for now.
 
-See the full list of projects currently monitored below.
-**If you would like to have a repository added, please open
-a pull request to update the list.**
+Configured projects have a `.papr.yml` file located in their
+repositories, detailing how to provision the environment and
+which tests should be run. Multiple testsuites can be
+defined, each with a different "context" (these refer to the
+names of the status checkmarks that appear on GitHub pull
+requests). A sample YAML file with allowed keys can be found
+[here](sample.papr.yml).
 
-### Interacting with redhat-ci
+A running instance of this service is currently maintained
+in the internal Red Hat infrastructure and is set up to
+monitor a growing list of projects. The full list of
+monitored repos appears below.
 
-There are two independent (but interacting) systems.  First,
-`redhat-ci` currently uses the [Jenkins PR builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin).
-If you want the bot to rerun the per-pull request tests, type
-`bot, retest this please`.
+If you'd like to run *your own instance* of this service,
+please see [RUNNING](RUNNING.md).
 
-The second major (optional, but recommended) system
-is [our instance of](https://homu-projectatomic-ci-infra.e8ca.engint.openshiftapps.com/) the
-upstream [Homu](https://github.com/servo/homu/) project. Your primary commands
-will be:
-
- - `@rh-atomic-bot r+ <commit sha>`: Start a merge, which will rebase the PR on git master, and will *rerun* the tests
- - `@rh-atomic-bot retry`: Use this if a merge fails, and you want to retest it.
-
-### More details about redhat-ci
-
-Configured projects have a `.redhat-ci.yml` file located in
-their repositories, detailing how to provision the
-environment and which tests should be run. A sample YAML
-file with allowed keys can be found
-[here](sample.redhat-ci.yml).
-
-Projects currently monitored are:
+### Monitored projects
 
 - [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
@@ -57,84 +44,23 @@ Projects currently monitored are:
 **If you would like to have a repository added, please open
 a pull request to update the list above.**
 
-### Parameters
+### More details about Red Hat CI services
 
-The script takes no arguments, but expects the following
-environment vars to be set:
+In addition to `PAPR`, many of the projects above are also
+hooked up to
+[our instance of](https://homu-projectatomic-ci-infra.e8ca.engint.openshiftapps.com/)
+the upstream [Homu](https://github.com/servo/homu/) project.
 
-- `github_repo` --  GitHub repo in `<owner>/<repo>` format.
-- `github_branch` -- Branch to test (incompatible with
-  `gihub_pull_id`).
-- `github_pull_id` -- Pull request ID to test (incompatible
-  with `github_branch`).
+While `PAPR` deals with automatic testing of branches and
+PRs, `Homu` is used as a merge bot.
 
-The following optional environment vars may be set:
-
-- `github_commit` -- SHA of commit to expect; this allows
-  for handling of race conditions.
-- `github_token` -- If specified, update the commit status
-  using GitHub's API, accessed with this repo-scoped token.
-- `github_contexts` -- A pipe-separated list of contexts. If
-  specified, only the testsuites which set these contexts
-  will be run.
-- `os_keyname` -- OpenStack keypair to use for provisioning,
-  if you want to support virtualized tests.
-- `os_privkey` -- Private key corresponding to the OpenStack
-  keyname, if you want to support virtualized tests.
-- `os_network` -- OpenStack network to use for provisioning,
-  if you want to support virtualized tests.
-- `os_floating_ip_pool` -- If specified, assign a floating
-  IP to the provisioned node from this pool and use the IP
-  to communicate with it. This is required if not running on
-  the same OpenStack network as the node.
-- `s3_prefix` -- If specified, artifacts will be uploaded to
-  this S3 path, in `<bucket>[/<prefix>]` form.
-- `site_repos` -- If specified, pipe-separated list of
-  repo files to inject. Each entry specifies the OS it is
-  valid for. E.g.:
-
-```
-centos/7=http://example.com/centos.repo|fedora/*=repos/fedora.repo
-```
-
-If you want to support virtualized tests, it also implicitly
-expects the usual OpenStack variables needed for
-authentication. These can normally be sourced from an RC
-file downloadable from the OpenStack interface:
-
-- `OS_AUTH_URL`
-- `OS_TENANT_ID`
-- `OS_USERNAME`
-- `OS_PASSWORD`
-
-Finally, AWS credentials may additionally be specified if
-uploading artifacts to S3:
-
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-
-### Running
-
-The `main` script integrates nicely in Jenkins, though it
-can be run locally, which is useful for testing. The easiest
-way to get started is to run inside a Python virtualenv with
-python-novaclient, PyYAML, jinja2, and awscli installed (the
-latter only being required if artifact uploading is wanted).
-Docker is also expected to be up and running for
-containerized tests.
-
-The script checks out the repo in `checkouts/$repo` and will
-re-use it if available rather than cloning each time. No
-builds are done on the host; the repo is transferred to the
-test environment during provisioning.
-
-A `state` directory is created, in which all temporary
-files that need to be stored during a run are kept.
-
-### Exit code
-
-We return non-zero *only* if there is an infrastructure
-error. In other words, no matter whether the PR/branch
-passes or fails the tests, we should always expect a clean
-exit. PR failures can be reported through the commit status
-API, or by looking at the state/rc file.
+You only need to know a few commands to interact with these
+services:
+ - If PR tests failed and you'd like to rerun them, use
+   `bot, retest this please`.
+ - If a PR is ready to be merged, use
+   `@rh-atomic-bot r+ <commit sha>`. This will rebase the PR
+   on the target branch, *rerun* the tests, and push the
+   commits if the tests pass.
+ - If the merge failed and you want to retest it, use
+   `@rh-atomic-bot retry`.

@@ -56,8 +56,8 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              \${OPT1} \
              \${IMAGE}"
 
-COPY . /redhat-ci
+COPY . /papr
 
-RUN pip3 install -r /redhat-ci/requirements.txt
+RUN pip3 install -r /papr/requirements.txt
 
-CMD ["/redhat-ci/main"]
+CMD ["/papr/main"]

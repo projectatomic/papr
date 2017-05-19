@@ -30,7 +30,7 @@ def main():
         traceback.print_exc()
         gh_status('error', "Red Hat CI", "Invalid YAML file.")
         if os.environ.get('github_pull_id'):
-            gh_comment(':boom: Invalid `.redhat-ci.yml`: {}.'.format(e.msg))
+            gh_comment(':boom: Invalid `.papr.yml`: {}.'.format(e.msg))
     else:
         n = len(suites)
         if n > 0:
@@ -45,10 +45,16 @@ def parse_suites():
 
     yml_file = os.path.join('checkouts',
                             os.environ['github_repo'],
-                            '.redhat-ci.yml')
+                            '.papr.yml')
 
-    # this should have been checked already
-    assert os.path.isfile(yml_file)
+    # try new name, fall back to old name until projects migrate over
+    for name in ['.papr.yml', '.papr.yaml', '.redhat-ci.yml']:
+        yml_file = os.path.join('checkouts', os.environ['github_repo'], name)
+        if os.path.isfile(yml_file):
+            break
+    else:
+        # this should have been checked in main, so should never happen
+        assert False, "No valid YAML file found"
 
     # are we supposed to run only some testsuites?
     only_contexts = os.environ.get('github_contexts')

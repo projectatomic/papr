@@ -82,9 +82,9 @@ provision_node() {
     update_github pending "Provisioning host..."
 
     # substitute node to use in "<name>:<ip>" format
-    if [ -n "${RHCI_DEBUG_USE_NODE:-}" ]; then
-        echo "${RHCI_DEBUG_USE_NODE%:*}" > $state/host/node_name
-        echo "${RHCI_DEBUG_USE_NODE#*:}" > $state/host/node_addr
+    if [ -n "${PAPR_DEBUG_USE_NODE:-}" ]; then
+        echo "${PAPR_DEBUG_USE_NODE%:*}" > $state/host/node_name
+        echo "${PAPR_DEBUG_USE_NODE#*:}" > $state/host/node_addr
     else
         $THIS_DIR/provisioner $state $state/parsed/host $state/host
         if [ -f $state/exit ]; then
@@ -119,7 +119,9 @@ provision_cluster() {
         local name=$(cat $state/parsed/host-$i/name)
         local addr=$(cat $state/host-$i/node_addr)
         name=$(sed 's/[.-]/_/g' <<< "$name")
+        # also export under the old name until projects migrate over
         echo "export RHCI_${name}_IP=${addr}" >> $state/parsed/envs
+        echo "export PAPR_${name}_IP=${addr}" >> $state/parsed/envs
         i=$((i + 1))
     done
 }
@@ -135,9 +137,9 @@ prepare_env() {
     fi
 
     # inject extra repos before installing packages
-    if [ -f $state/parsed/rhci-extras.repo ]; then
+    if [ -f $state/parsed/papr-extras.repo ]; then
         envcmd mkdir -p /etc/yum.repos.d
-        envcp $state/parsed/rhci-extras.repo /etc/yum.repos.d
+        envcp $state/parsed/papr-extras.repo /etc/yum.repos.d
     fi
 
     if [ -f $state/parsed/packages ]; then
@@ -165,6 +167,19 @@ prepare_env() {
         echo "export RHCI_PULL_ID=${github_pull_id}" >> $state/parsed/envs
         if [ -f state/is_merge_sha ]; then
             echo "export RHCI_MERGE_COMMIT=$(cat state/sha)" >> $state/parsed/envs
+        fi
+    fi
+
+    # re-inject under the new name, delete the old name once projects are
+    # migrated over
+    echo "export PAPR_REPO=${github_repo}" >> $state/parsed/envs
+    echo "export PAPR_COMMIT=${github_commit}" >> $state/parsed/envs
+    if [ -n "${github_branch:-}" ]; then
+        echo "export PAPR_BRANCH=${github_branch}" >> $state/parsed/envs
+    else
+        echo "export PAPR_PULL_ID=${github_pull_id}" >> $state/parsed/envs
+        if [ -f state/is_merge_sha ]; then
+            echo "export PAPR_MERGE_COMMIT=$(cat state/sha)" >> $state/parsed/envs
         fi
     fi
 }
@@ -809,7 +824,7 @@ teardown_node_impl() {
 }
 
 ensure_teardown_node() {
-    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+    if [ -z "${PAPR_DEBUG_NO_TEARDOWN:-}" ]; then
         trap teardown_node EXIT
     fi
 }
@@ -821,7 +836,7 @@ teardown_container() {
 }
 
 ensure_teardown_container() {
-    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+    if [ -z "${PAPR_DEBUG_NO_TEARDOWN:-}" ]; then
         trap teardown_container EXIT
     fi
 }
@@ -843,7 +858,7 @@ teardown_cluster() {
 }
 
 ensure_teardown_cluster() {
-    if [ -z "${RHCI_DEBUG_NO_TEARDOWN:-}" ]; then
+    if [ -z "${PAPR_DEBUG_NO_TEARDOWN:-}" ]; then
         trap teardown_cluster EXIT
     fi
 }
