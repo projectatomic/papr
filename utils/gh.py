@@ -14,6 +14,7 @@ import sys
 import json
 import argparse
 import requests
+from simplejson.scanner import JSONDecodeError
 
 
 class CommitNotFoundException(Exception):
@@ -89,16 +90,25 @@ def _craft_data_dict(state, context, description, url):
 def _update_status(repo, commit, token, data):
     "Sends the status update's data using the GitHub API."
 
-    token_header = {'Authorization': 'token ' + token}
+    header = {'Authorization': 'token ' + token}
     api_url = ("https://api.github.com/repos/%s/statuses/%s" %
                (repo, commit))
 
     if __name__ == '__main__':
         print("Updating status of commit", commit, "with data", data)
 
-    # use data= instead of json= in case we're running on an older requests
-    resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
-    body = resp.json()
+    try:
+        # use data= instead of json= in case we're running on an older requests
+        resp = requests.post(api_url, data=json.dumps(data), headers=header)
+        body = resp.json()
+    except JSONDecodeError:
+        print("Expected JSON, but received:")
+        print("---")
+        print(resp.content)
+        print("---")
+        print("Retrying...")
+        resp = requests.post(api_url, data=json.dumps(data), headers=header)
+        body = resp.json()
 
     # pylint: disable=no-member
     if resp.status_code != requests.codes.created:
