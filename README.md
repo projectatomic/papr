@@ -1,9 +1,10 @@
 ### PAPR (previously called redhat-ci)
 
-`PAPR` is a testing tool similar in workflow to Travis CI,
-but with an emphasis on enabling test environments useful
-for the Project Atomic effort. Only Fedora and CentOS-based
-test environments are supported for now.
+PAPR (pronounced like "paper") is a testing tool similar in
+workflow to Travis CI, but with an emphasis on enabling test
+environments useful for the Project Atomic effort. Only
+Fedora and CentOS-based test environments are supported for
+now.
 
 Configured projects have a `.papr.yml` file located in their
 repositories, detailing how to provision the environment and
@@ -46,13 +47,13 @@ a pull request to update the list above.**
 
 ### More details about Red Hat CI services
 
-In addition to `PAPR`, many of the projects above are also
+In addition to PAPR, many of the projects above are also
 hooked up to
 [our instance of](https://homu-projectatomic-ci-infra.e8ca.engint.openshiftapps.com/)
 the upstream [Homu](https://github.com/servo/homu/) project.
 
-While `PAPR` deals with automatic testing of branches and
-PRs, `Homu` is used as a merge bot.
+While PAPR deals with automatic testing of branches and
+PRs, Homu is used as a merge bot.
 
 You only need to know a few commands to interact with these
 services:
