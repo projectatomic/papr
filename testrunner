@@ -131,6 +131,10 @@ prepare_env() {
     echo $upload_dir > $state/upload_dir
     mkdir $upload_dir
 
+    if [ -n "${site_repos:-}" ]; then
+        env_inject_site_repos
+    fi
+
     # https://github.com/projectatomic/rpm-ostree/issues/687
     if ! on_atomic_host; then
         env_make_rpmmd_cache
@@ -309,6 +313,47 @@ install_packages() {
     fi
 }
 
+env_inject_site_repos() {
+    local os_id=$(get_env_os_info ID)
+    local os_version_id=$(get_env_os_info VERSION_ID)
+
+    local OLDIFS=$IFS; IFS='|'
+    mkdir -p $state/site-repos
+    for site_repo in $site_repos; do
+        local repo_file=${site_repo#*=}
+        local target_os=${site_repo%=*}
+        local target_os_id=${target_os%/*}
+        local target_os_version_id=${target_os#*/}
+
+        [ -n "$repo_file" ]
+        [ -n "$target_os_id" ]
+        [ -n "$target_os_version_id" ]
+
+        if [ "$target_os_id" != '*' ] &&
+            ([ -z "$os_id" ] ||
+             [ "$target_os_id" != "$os_id" ]); then
+                continue
+        fi
+
+        if [ "$target_os_version_id" != '*' ] &&
+            ([ -z "$os_version_id" ] ||
+             [ "$target_os_version_id" != "$os_version_id" ]); then
+                continue
+        fi
+
+        if [ "${repo_file::7}" == "http://" ] ||
+           [ "${repo_file::8}" == "https://" ]; then
+            (cd $state/site-repos && curl -LO "$repo_file")
+        else # assume local
+            cp -f $repo_file $state/site-repos
+        fi
+    done
+    IFS=$OLDIFS
+
+    envcmd mkdir -p /etc/yum.repos.d
+    envcp $state/site-repos/. /etc/yum.repos.d
+}
+
 env_make_rpmmd_cache() {
     local os_id=$(get_env_os_info ID)
     local os_version_id=$(get_env_os_info VERSION_ID)
@@ -330,44 +375,6 @@ env_make_rpmmd_cache() {
         mkdir -p "$state/$cachedir"
         flock --shared "$cachedir" cp -alT "$cachedir" "$state/$cachedir"
         envcp "$state/$cachedir/." /var/cache/$mgr
-    fi
-
-    if [ -n "${site_repos:-}" ]; then
-        local OLDIFS=$IFS; IFS='|'
-        mkdir -p $state/site-repos
-        for site_repo in $site_repos; do
-            local repo_file=${site_repo#*=}
-            local target_os=${site_repo%=*}
-            local target_os_id=${target_os%/*}
-            local target_os_version_id=${target_os#*/}
-
-            [ -n "$repo_file" ]
-            [ -n "$target_os_id" ]
-            [ -n "$target_os_version_id" ]
-
-            if [ "$target_os_id" != '*' ] &&
-                ([ -z "$os_id" ] ||
-                 [ "$target_os_id" != "$os_id" ]); then
-                    continue
-            fi
-
-            if [ "$target_os_version_id" != '*' ] &&
-                ([ -z "$os_version_id" ] ||
-                 [ "$target_os_version_id" != "$os_version_id" ]); then
-                    continue
-            fi
-
-            if [ "${repo_file::7}" == "http://" ] ||
-               [ "${repo_file::8}" == "https://" ]; then
-                (cd $state/site-repos && curl -LO "$repo_file")
-            else # assume local
-                cp -f $repo_file $state/site-repos
-            fi
-        done
-        IFS=$OLDIFS
-
-        envcmd mkdir -p /etc/yum.repos.d
-        envcp $state/site-repos/. /etc/yum.repos.d
     fi
 
     # update the cache
