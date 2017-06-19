@@ -1,0 +1,13 @@
+branches:
+  - master
+  - auto
+  - try
+
+required: true
+
+container:
+    image: registry.fedoraproject.org/fedora:25
+
+tests:
+    - pip3 install flake8
+    - flake8 *.py utils/*.py
