@@ -4,7 +4,7 @@ PAPR (pronounced like "paper") is a testing tool similar in
 workflow to Travis CI, but with an emphasis on enabling test
 environments useful for the Project Atomic effort. Only
 Fedora and CentOS-based test environments are supported for
-now.
+now (see [DISTROS](DISTROS.md) for details).
 
 Configured projects have a `.papr.yml` file located in their
 repositories, detailing how to provision the environment and
