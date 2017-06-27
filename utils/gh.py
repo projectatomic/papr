@@ -95,18 +95,18 @@ def _update_status(repo, commit, token, data):
                (repo, commit))
 
     if __name__ == '__main__':
-        print("Updating status of commit", commit, "with data", data)
+        eprint("Updating status of commit", commit, "with data", data)
 
     try:
         # use data= instead of json= in case we're running on an older requests
         resp = requests.post(api_url, data=json.dumps(data), headers=header)
         body = resp.json()
     except JSONDecodeError:
-        print("Expected JSON, but received:")
-        print("---")
-        print(resp.content)
-        print("---")
-        print("Retrying...")
+        eprint("Expected JSON, but received:")
+        eprint("---")
+        eprint(resp.content)
+        eprint("---")
+        eprint("Retrying...")
         resp = requests.post(api_url, data=json.dumps(data), headers=header)
         body = resp.json()
 
@@ -146,6 +146,10 @@ def comment(repo, token, issue, text):
         if body is not None:
             errmsg += "\n" + str(body)
         raise Exception(errmsg)
+
+
+def eprint(*args):
+    print(*args, file=sys.stderr)
 
 
 if __name__ == '__main__':
