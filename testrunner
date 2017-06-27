@@ -808,9 +808,12 @@ ensure_err_github_update() {
 }
 
 teardown_node() {
-    teardown_node_impl \
-        $(cat $state/host/node_name) \
-        $(cat $state/host/node_addr)
+    if [ -f $state/host/node_name ] && \
+       [ -f $state/host/node_addr ]; then
+        teardown_node_impl \
+            $(cat $state/host/node_name) \
+            $(cat $state/host/node_addr)
+    fi
 }
 
 teardown_node_impl() {
@@ -849,15 +852,20 @@ ensure_teardown_container() {
 }
 
 teardown_cluster() {
-    local nhosts=$(cat $state/parsed/nhosts)
+    if [ -f $state/parsed/nhosts ]; then
+        local nhosts=$(cat $state/parsed/nhosts)
 
-    local i=0
-    while [ $i -lt $nhosts ]; do
-        teardown_node_impl \
-            $(cat $state/host-$i/node_name) \
-            $(cat $state/host-$i/node_addr)
-        i=$((i + 1))
-    done
+        local i=0
+        while [ $i -lt $nhosts ]; do
+            if [ -f $state/host-$i/node_name ] && \
+               [ -f $state/host-$i/node_addr ]; then
+                teardown_node_impl \
+                    $(cat $state/host-$i/node_name) \
+                    $(cat $state/host-$i/node_addr)
+            fi
+            i=$((i + 1))
+        done
+    fi
 
     if container_controlled; then
         teardown_container
