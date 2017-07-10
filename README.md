@@ -4,7 +4,7 @@ PAPR (pronounced like "paper") is a testing tool similar in
 workflow to Travis CI, but with an emphasis on enabling test
 environments useful for the Project Atomic effort. Only
 Fedora and CentOS-based test environments are supported for
-now (see [DISTROS](DISTROS.md) for details).
+now (see [DISTROS](docs/DISTROS.md) for details).
 
 Configured projects have a `.papr.yml` file located in their
 repositories, detailing how to provision the environment and
@@ -12,7 +12,7 @@ which tests should be run. Multiple testsuites can be
 defined, each with a different "context" (these refer to the
 names of the status checkmarks that appear on GitHub pull
 requests). A sample YAML file with allowed keys can be found
-[here](sample.papr.yml).
+[here](docs/sample.papr.yml).
 
 A running instance of this service is currently maintained
 in the internal Red Hat infrastructure and is set up to
@@ -20,7 +20,7 @@ monitor a growing list of projects. The full list of
 monitored repos appears below.
 
 If you'd like to run *your own instance* of this service,
-please see [RUNNING](RUNNING.md).
+please see [RUNNING](docs/RUNNING.md).
 
 ### Monitored projects
 
