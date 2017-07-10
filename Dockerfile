@@ -1,4 +1,4 @@
-FROM fedora:24
+FROM registry.fedoraproject.org/fedora:25
 MAINTAINER Jonathan Lebon <jlebon@redhat.com>
 
 # NB: we install libyaml-devel so that we can use
