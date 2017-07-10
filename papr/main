@@ -43,7 +43,7 @@ main() {
 
     export PYTHONUNBUFFERED=1
 
-    exec $THIS_DIR/spawner.py
+    exec python3 $THIS_DIR/spawner.py
 }
 
 validate_vars() {

@@ -10,4 +10,4 @@ container:
 
 tests:
     - pip3 install flake8
-    - flake8 *.py utils/*.py
+    - flake8 *.py papr/*.py papr/utils/*.py

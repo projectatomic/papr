@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import yaml
 import shlex
 
 import pykwalify.core
 import pykwalify.errors
 
-import utils.common as common
+from . import PKG_DIR
+from . import common
 
 
 class ParserError(SyntaxError):
@@ -106,8 +106,8 @@ class SuiteParser:
 
     def _validate(self, suite):
 
-        schema = os.path.join(sys.path[0], "utils/schema.yml")
-        ext = os.path.join(sys.path[0], "utils/ext_schema.py")
+        schema = os.path.join(PKG_DIR, "schema.yml")
+        ext = os.path.join(PKG_DIR, "ext_schema.py")
 
         try:
             c = pykwalify.core.Core(source_data=suite,

@@ -40,7 +40,7 @@ provision_host() {
         os_min_ephemeral=$(cat $parsedhost/min_secondary_disk) \
         os_name_prefix=$os_name_prefix \
         os_user_data="$THIS_DIR/utils/user-data" \
-        "$THIS_DIR/utils/os_provision.py" $outdir
+        python3 "$THIS_DIR/utils/os_provision.py" $outdir
 
     ssh_wait $(cat $outdir/node_addr) $state/node_key
 

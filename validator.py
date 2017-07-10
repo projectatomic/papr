@@ -8,7 +8,7 @@
 import os
 import pprint
 import argparse
-import utils.parser as parser
+import papr.utils.parser as parser
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('yml_file', help="YAML file to parse and validate")
