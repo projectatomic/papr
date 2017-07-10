@@ -1,8 +1,11 @@
 import re
-import utils.common as common
 
 from pykwalify.core import Core
 from pykwalify.errors import SchemaError
+
+# we can't use pkg-relative imports here because pykwalify imports this file as
+# its own pkg
+from papr.utils import common
 
 
 # http://stackoverflow.com/questions/2532053/

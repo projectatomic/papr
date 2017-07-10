@@ -9,14 +9,15 @@ import time
 import traceback
 import threading
 import subprocess
-from os.path import dirname, realpath
 
 import boto3
 import jinja2
 
-import utils.parser as parser
-import utils.common as common
-import utils.gh as gh
+# XXX: switch to relative imports when we're a proper module
+from papr import PKG_DIR
+import papr.utils.parser as parser
+import papr.utils.common as common
+import papr.utils.gh as gh
 
 
 def main():
@@ -88,7 +89,7 @@ def parse_suites():
 
 def spawn_testrunners(n):
 
-    testrunner = os.path.join(sys.path[0], "testrunner")
+    testrunner = os.path.join(PKG_DIR, "testrunner")
 
     runners = []
     threads = []
@@ -192,8 +193,7 @@ def update_required_context(suites):
         result = (suite['rc'] == 0)
         results_suites.append((name, result, url))
 
-    tpl_fname = os.path.join(dirname(realpath(__file__)),
-                             'utils', 'required-index.j2')
+    tpl_fname = os.path.join(PKG_DIR, 'utils', 'required-index.j2')
 
     s3_key = '%s/%s/%s.%s/%s' % (os.environ['s3_prefix'],
                                  os.environ['github_repo'],

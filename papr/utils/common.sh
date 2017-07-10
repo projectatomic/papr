@@ -29,7 +29,7 @@ common_update_github() {
         return
     fi
 
-    $THIS_DIR/utils/gh.py \
+    python3 $THIS_DIR/utils/gh.py \
         --repo $github_repo \
         --commit $github_commit \
         --token env:github_token \
@@ -41,7 +41,7 @@ common_update_github() {
     # Also update the merge sha if we're testing a merge commit.
     # This is useful for homu: https://github.com/servo/homu/pull/54
     if [ -f state/is_merge_sha ]; then
-        $THIS_DIR/utils/gh.py \
+        python3 $THIS_DIR/utils/gh.py \
             --repo $github_repo \
             --commit $(cat state/sha) \
             --token env:github_token \

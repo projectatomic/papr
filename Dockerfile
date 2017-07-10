@@ -56,8 +56,8 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              \${OPT1} \
              \${IMAGE}"
 
-COPY . /papr
+COPY . /src
 
-RUN pip3 install -r /papr/requirements.txt
+RUN pip3 install -r /src/requirements.txt /src
 
-CMD ["/papr/main"]
+CMD ["/usr/bin/papr"]
