@@ -9,5 +9,6 @@ container:
     image: registry.fedoraproject.org/fedora:25
 
 tests:
-    - pip3 install flake8
+    - pip3 install flake8 pylint
     - flake8 *.py papr/*.py papr/utils/*.py
+    - pylint -E *.py papr
