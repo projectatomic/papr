@@ -8,6 +8,9 @@ required: true
 container:
     image: registry.fedoraproject.org/fedora:25
 
+packages:
+    - @buildsys-build
+
 tests:
     - pip3 install flake8 pylint -r requirements.txt
     - flake8 *.py papr/*.py papr/utils/*.py
