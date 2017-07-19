@@ -10,6 +10,7 @@ container:
 
 packages:
     - '@buildsys-build'
+    - python3-devel
 
 tests:
     - pip3 install flake8 pylint -r requirements.txt
