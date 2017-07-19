@@ -9,7 +9,7 @@ container:
     image: registry.fedoraproject.org/fedora:25
 
 packages:
-    - @buildsys-build
+    - '@buildsys-build'
 
 tests:
     - pip3 install flake8 pylint -r requirements.txt
