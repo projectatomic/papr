@@ -46,7 +46,7 @@ please see [RUNNING](RUNNING.md).
 **If you would like to have a repository added, please open
 a pull request to update the list above.**
 
-### More details about Red Hat CI services
+### More details about Project Atomic CI services
 
 In addition to PAPR, many of the projects above are also
 hooked up to
