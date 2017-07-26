@@ -52,6 +52,16 @@ provision_host() {
         fi
         deploy_ostree
     fi
+
+    # XXX: add hotfix for https://bugzilla.redhat.com/show_bug.cgi?id=1475460
+    # XXX: this is hacky and just a bad spot for doing this, but really everyone
+    # provisioning F26 is going to hit this, so might as well include it here
+    # rather than require all projects to have a workaround
+    if [[ $os_image == fedora/26/* ]]; then
+        vmssh sed -i '/^DOCKER_NETWORK_OPTIONS=/ s/$/--mtu 1400/' \
+            /etc/sysconfig/docker-network
+        vmssh systemctl restart docker
+    fi
 }
 
 deploy_ostree() {
