@@ -7,6 +7,7 @@ the YAML:
 - `fedora/25/cloud`
 - `fedora/26/atomic`
 - `fedora/26/atomic/pungi`
+- `fedora/26/cloud`
 - `centos/7/atomic`
 - `centos/7/cloud`
 - `centos/7/atomic/alpha`
@@ -43,7 +44,7 @@ This is the last officially released Fedora 25 Atomic Host
 image, which is no longer updated. It will be removed once
 projects have migrated to Fedora 26.
 
-### fedora/24/cloud, fedora/25/cloud
+### fedora/24/cloud, fedora/25/cloud, fedora/26/cloud
 
 These are the officially supported Cloud images from Fedora.
 They are not usually updated after initial release. You can
