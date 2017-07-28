@@ -63,8 +63,7 @@ mapping:
     sequence:
       - type: str
   timeout:
-    type: str
-    pattern: '[0-9]+[smh]'
+    type: any
     func: ext_timeout
   artifacts:
     sequence:

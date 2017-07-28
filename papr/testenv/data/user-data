@@ -1,0 +1,8 @@
+#cloud-config
+disable_root: 0
+
+users:
+ - name: root
+   lock-passwd: false
+   inactive: false
+   system: false

@@ -8,7 +8,7 @@ import pykwalify.core
 import pykwalify.errors
 
 from . import PKG_DIR
-from . import common
+from . import utils
 
 
 class ParserError(SyntaxError):
@@ -58,7 +58,7 @@ class SuiteParser:
             # tell users which suite exactly caused the error
             except ParserError as e:
                 raise ParserError("failed to parse %s testsuite: %s"
-                                  % (common.ordinal(idx + 1), e.msg))
+                                  % (utils.ordinal(idx + 1), e.msg))
 
     def _merge(self, suite, new):
         "Merge the next document into the current one."
@@ -106,8 +106,8 @@ class SuiteParser:
 
     def _validate(self, suite):
 
-        schema = os.path.join(PKG_DIR, "schema.yml")
-        ext = os.path.join(PKG_DIR, "ext_schema.py")
+        schema = os.path.join(PKG_DIR, "schema/schema.yml")
+        ext = os.path.join(PKG_DIR, "schema/ext_schema.py")
 
         try:
             c = pykwalify.core.Core(source_data=suite,
@@ -197,7 +197,7 @@ def flush_suite(suite, outdir):
     _write_to_file(outdir, "branches",
                    '\n'.join(suite.get('branches', ['master'])))
 
-    timeout = common.str_to_timeout(suite.get('timeout', '2h'))
+    timeout = utils.str_to_timeout(suite.get('timeout', '2h'))
     _write_to_file(outdir, "timeout", str(timeout))
 
     _write_to_file(outdir, "context", suite.get('context'))

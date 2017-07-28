@@ -1,0 +1,137 @@
+# The site.yaml file describes information specific to the
+# environment in which PAPR is run. All supported fields are
+# described below. It must be in UTF-8 format (though only
+# fields denoted to support UTF-8 can contain non-ASCII
+# values).
+
+# OPTIONAL
+# Directory in which to cache data such as git checkouts and
+# rpmmd cache. If omitted, defaults to /var/cache/papr.
+cachedir: /var/cache/papr
+
+# REQUIRED
+# Describes how each PAPR test environment will be executed.
+# There are three test environments: container, host, and
+# cluster. Omitting a key (or leaving off its value) implies
+# that the test environment is not supported at this site.
+backends:
+  # OPTIONAL
+  # The 'container' backend. For now, the only implemented
+  # backend is 'docker'. If omitted, tests using 'container'
+  # will error out.
+  container:
+    type: docker
+  # OPTIONAL
+  # The 'host' backend. For now, the only implemented
+  # backend is 'nova'. If omitted, tests using 'host' will
+  # error out.
+  host:
+    type: nova
+    # OPTIONAL
+    # Additional backend-specific configuration. The config
+    # fields below are for the nova backend since it is
+    # currently the only supported one.
+    config:
+      # OPTIONAL
+      # If set to true, authentication information is
+      # obtained from the standard OpenStack environment
+      # variables. If false, you must specify the auth-url,
+      # tenant-id, username, and password. Defaults to
+      # false.
+      auth-from-env: true
+      # REQUIRED if auth-from-env is false
+      # The auth URL.
+      auth-url: https://openstack.apiserver.com:5000/v2.0
+      # REQUIRED if auth-from-env is false
+      # The auth user.
+      auth-username: openstack-user
+      # REQUIRED if auth-from-env is false
+      # The auth password .
+      auth-password: password123
+      # REQUIRED if auth-from-env is false
+      # The auth tenant name.
+      auth-tenant: papr
+      # OPTIONAL
+      # The prefix to use when naming provisioned nodes. If
+      # omitted, no prefix is used.
+      node-prefix: papr
+      # REQUIRED
+      # The name of the network to attach to provisioned nodes.
+      network: my-openstack-network
+      # REQUIRED
+      # The name of the key to use for provisioned nodes.
+      keyname: ci-keypair
+      # REQUIRED
+      # Path to the private key corresponding to the keyname.
+      privkey: /path/to/private/key
+      # OPTIONAL
+      # If provided, fip pool from which to associate a fip to provisioned node.
+      # If omitted, no fip will be assigned (this is fine if PAPR is run from
+      # the same private OpenStack network).
+      floating-ip-pool: 10.17.123.0/22
+
+# OPTIONAL
+# If set, PAPR will make comments and commit status updates
+# back to GitHub. This requires a repo scope token belonging
+# to a user with push access to the target repo.
+github:
+  # OPTIONAL
+  # If set to true, the auth token is obtained from the
+  # GITHUB_TOKEN env var. Defaults to false.
+  auth-from-env: true
+  # OPTIONAL
+  # The auto token if auth-from-env is false.
+  auth-token: asdf
+
+# OPTIONAL
+# If specified, list of repo files to inject.
+repos:
+    # REQUIRED
+    # The $ID of the distro for which the repo is valid.
+  - distro_id: centos
+    # OPTIONAL
+    # The $VERSION_ID of the distro for which the repo is
+    # valid. If omitted, all versions apply.
+    distro_version_id: 7
+    # REQUIRED
+    # Path to the repo file to inject in /etc/yum.repos.d/.
+    # Repo files named the same in the testenv will be
+    # overwritten. This is a useful way to override the
+    # default repo values.
+    repo: /path/to/the/file.repo
+
+# REQUIRED
+# Determines how results are published. There are two
+# publishers supported: 'local' and 's3'.
+publisher:
+
+  # The 'local' publisher outputs files on the local host.
+  type: local
+  config:
+    # REQUIRED
+    # Root directory in which to publish files.
+    rootdir: /var/tmp/papr-publish
+
+  # The 's3' publisher uploads files to S3.
+  type: s3
+  config:
+    # OPTIONAL
+    # If set to true, authentication information is obtained
+    # from the standard AWS environment variables. If false,
+    # you must specify the auth-key-id and auth-secret-key.
+    # Defaults to false.
+    auth-from-env: true
+    # REQUIRED if auth-from-env is false
+    # AWS access key ID.
+    auth-key-id: AKIAIAKGPQWRGSDVSDLK
+    # REQUIRED if auth-from-env is false
+    # AWS secret access key.
+    auth-secret-key: MYSOOPERSEEKRETKEY
+    # REQUIRED
+    # S3 bucket in which to publish files.
+    bucket: my-bucket
+    # OPTIONAL
+    # Root directory within the bucket in which to publish
+    # files. If omitted, files are uploaded at the bucket
+    # root.
+    rootdir: dir/subdir
