@@ -78,7 +78,7 @@ def recurse(dirpath, tpl):
 def main():
     "Main entry point"
 
-    tpl_fname = join(dirname(realpath(__file__)), 'index.j2')
+    tpl_fname = join(dirname(realpath(__file__)), 'templates', 'index.j2')
     with open(tpl_fname, 'r') as tplf:
         tpl = jinja2.Template(tplf.read(), autoescape=True)
 

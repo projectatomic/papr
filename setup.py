@@ -11,11 +11,7 @@ setup(
     version="0.1",
     packages=find_packages(),
     entry_points={
-        "console_scripts": ["papr = papr:main"],
+        "console_scripts": ["papr = papr.main:main"],
     },
-    # just copy the bash scripts for now until they're fully ported over
-    package_data={"papr": ["main", "testrunner", "provisioner"],
-                  # we'll hoist utils out later to just be a module in papr
-                  "papr.utils": ["*.sh", "*.yml", "*.j2", "sshwait",
-                                 "user-data"]}
+    package_data={"papr": ["data/*", "schema/*", "templates/*"]}
 )

@@ -5,7 +5,7 @@ from pykwalify.errors import SchemaError
 
 # we can't use pkg-relative imports here because pykwalify imports this file as
 # its own pkg
-from papr.utils import common
+from papr import utils
 
 
 # http://stackoverflow.com/questions/2532053/
@@ -87,7 +87,11 @@ def ext_ostree(value, rule_obj, path):
 
 
 def ext_timeout(value, rule_obj, path):
-    if common.str_to_timeout(value) > (2 * 60 * 60):
+    if type(value) is not str:
+        raise SchemaError("expected str")
+    elif not re.match('^[0-9]+[smh]$', value):
+        raise SchemaError("invalid timeout string")
+    if utils.str_to_timeout(value) > (2 * 60 * 60):
         raise SchemaError("timeout cannot be greater than 2 hours")
     return True
 
