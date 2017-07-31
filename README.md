@@ -24,6 +24,7 @@ please see [RUNNING](docs/RUNNING.md).
 
 ### Monitored projects
 
+- [kubernetes-incubator/cri-o](https://github.com/kubernetes-incubator/cri-o)
 - [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
 - [openshift/openshift-ansible](https://github.com/openshift/openshift-ansible)
