@@ -218,12 +218,12 @@ ssh_setup_cluster() {
     # private key of the OpenStack keypair used. NB: not in
     # a state dir; we don't want to regen a key on every
     # run.
-    if [ ! -f cluster_keypair/id_rsa ]; then
-        # let's just stick with RSA since it's supported on
-        # all platforms
-        mkdir cluster_keypair
-        ssh-keygen -t rsa -b 4096 -N "" -f cluster_keypair/id_rsa
-    fi
+    mkdir -p cluster_keypair
+    flock --exclusive cluster_keypair sh -ec \
+        'if [ ! -f cluster_keypair/id_rsa ]; then
+             # just stick with RSA which is supported on all platforms
+             ssh-keygen -t rsa -b 4096 -N "" -f cluster_keypair/id_rsa
+         fi'
 
     if container_controlled; then
         # most base images don't have ssh
