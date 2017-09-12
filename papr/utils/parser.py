@@ -43,7 +43,7 @@ class SuiteParser:
         # catch exceptions due to a bad YAML and transform into ParserError
         except UnicodeDecodeError:
             raise ParserError("file is not valid UTF-8")
-        except yaml.scanner.ScannerError as e:
+        except (yaml.scanner.ScannerError, yaml.parser.ParserError):
             raise ParserError("file could not be parsed as valid YAML")
 
     def parse(self):
