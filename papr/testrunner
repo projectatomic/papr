@@ -68,7 +68,12 @@ provision_container() {
         exit 0
     fi
 
-    sudo docker run -d \
+    local name=papr-$(date +%s%N)
+    if [ -n "${BUILD_ID:-}" ]; then
+        name=$name-$BUILD_ID
+    fi
+
+    sudo docker run --name $name -d \
         --cidfile $state/cid \
         "$image" sleep infinity
 

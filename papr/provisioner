@@ -27,7 +27,7 @@ provision_host() {
     # include the BUILD_ID directly in the name to make it
     # easier to determine which nodes belong to which runs
     # when troubleshooting
-    os_name_prefix=github-ci-testnode
+    os_name_prefix=papr
     if [ -n "${BUILD_ID:-}" ]; then
         os_name_prefix=$os_name_prefix-$BUILD_ID
     fi
