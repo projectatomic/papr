@@ -45,6 +45,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e site_repos \
              -e OS_AUTH_URL \
              -e OS_TENANT_ID \
+             -e OS_TENANT_NAME \
              -e OS_USERNAME \
              -e OS_PASSWORD \
              -e AWS_ACCESS_KEY_ID \

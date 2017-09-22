@@ -22,16 +22,18 @@
 import os
 import sys
 import uuid
-from novaclient import client
+import time
+from novaclient import client as novaclient
+from cinderclient import client as cinderclient
 
 # XXX: clean this up
 
 output_dir = sys.argv[1]
 
-nova = client.Client(2, auth_url=os.environ['OS_AUTH_URL'],
-                     tenant_id=os.environ['OS_TENANT_ID'],
-                     username=os.environ['OS_USERNAME'],
-                     password=os.environ['OS_PASSWORD'])
+nova = novaclient.Client(2, auth_url=os.environ['OS_AUTH_URL'],
+                         tenant_id=os.environ['OS_TENANT_ID'],
+                         username=os.environ['OS_USERNAME'],
+                         password=os.environ['OS_PASSWORD'])
 
 print("INFO: authenticating")
 nova.authenticate()
@@ -45,12 +47,10 @@ image = nova.images.findall(name=os.environ['os_image'])[0]
 min_ram = int(os.environ['os_min_ram'])
 min_vcpus = int(os.environ['os_min_vcpus'])
 min_disk = int(os.environ['os_min_disk'])
-min_ephemeral = int(os.environ['os_min_ephemeral'])
 flavors = nova.flavors.findall()
 flavors = [f for f in flavors if (f.ram >= min_ram and
                                   f.vcpus >= min_vcpus and
-                                  f.disk >= min_disk and
-                                  f.ephemeral >= min_ephemeral)]
+                                  f.disk >= min_disk)]
 
 if len(flavors) == 0:
     print("ERROR: no flavor satisfies minimum requirements.")
@@ -69,7 +69,6 @@ def filter_flavors(flavors, attr):
 flavors = filter_flavors(flavors, 'vcpus')
 flavors = filter_flavors(flavors, 'ram')
 flavors = filter_flavors(flavors, 'disk')
-flavors = filter_flavors(flavors, 'ephemeral')
 
 flavor = flavors[0]
 print("INFO: choosing flavor '%s'" % flavor.name)
@@ -106,16 +105,15 @@ if max_tries == 0:
     print("ERROR: can't find unique name. Something is probably broken.")
     sys.exit(1)
 
-print("INFO: booting server '%s'" % name)
+print("INFO: booting server %s" % name)
 server = nova.servers.create(name, meta=meta, image=image, userdata=userdata,
                              flavor=flavor, key_name=os.environ['os_keyname'],
                              nics=[{'net-id': network.id}])
-
+print("INFO: booted server %s (%s)" % (name, server.id))
 
 def write_to_file(fn, s):
     with open(os.path.join(output_dir, fn), 'w') as f:
         f.write(s)
-
 
 write_to_file('node_name', name)
 
@@ -123,6 +121,7 @@ write_to_file('node_name', name)
 # XXX: implement timeout
 print("INFO: waiting for server to become active...")
 while server.status == 'BUILD':
+    time.sleep(1)
     server.get()
 
 if server.status != 'ACTIVE':
@@ -130,6 +129,39 @@ if server.status != 'ACTIVE':
     print("ERROR: deleting server")
     server.delete()
     sys.exit(1)
+
+vol = None
+min_ephemeral = int(os.environ['os_min_ephemeral'])
+if min_ephemeral > 0:
+    try:
+        print("INFO: creating volume of size %dG" % min_ephemeral)
+        cinder = cinderclient.Client(2, os.environ['OS_USERNAME'],
+                                     os.environ['OS_PASSWORD'],
+                                     os.environ['OS_TENANT_NAME'],
+                                     os.environ['OS_AUTH_URL'],)
+        cinder.authenticate()
+        volname = name + '-vol'
+        vol = cinder.volumes.create(name=volname, size=min_ephemeral)
+        print("INFO: created volume %s (%s)" % (volname, vol.id))
+
+        print("INFO: waiting for volume to become active...")
+        while vol.status == 'creating':
+            time.sleep(1)
+            vol.get()
+
+        if vol.status != 'available':
+            print("ERROR: volume is not avilable (state: %s)" % vol.status)
+            server.delete()
+            vol.delete()
+            sys.exit(1)
+
+        # now we can safely attach the volume
+        nova.volumes.create_server_volume(server.id, vol.id)
+    except:
+        server.delete()
+        if vol is not None:
+            vol.delete()
+        raise
 
 ip = server.networks[network.label][0]
 print("INFO: network IP is %s" % ip)
@@ -141,3 +173,4 @@ if 'os_floating_ip_pool' in os.environ:
     print("INFO: floating IP is %s" % ip)
 
 write_to_file('node_addr', ip)
+write_to_file('node_volid', vol.id if vol is not None else '')
