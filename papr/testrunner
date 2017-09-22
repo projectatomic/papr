@@ -818,7 +818,7 @@ teardown_node() {
         teardown_node_impl \
             $(cat $state/host/node_name) \
             $(cat $state/host/node_addr) \
-            $(cat $state/host/node_volid)
+            "$(cat $state/host/node_volid)"
     fi
 }
 
@@ -874,7 +874,7 @@ teardown_cluster() {
                 teardown_node_impl \
                     $(cat $state/host-$i/node_name) \
                     $(cat $state/host-$i/node_addr) \
-                    $(cat $state/host-$i/node_volid)
+                    "$(cat $state/host-$i/node_volid)"
             fi
             i=$((i + 1))
         done
