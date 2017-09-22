@@ -111,9 +111,11 @@ server = nova.servers.create(name, meta=meta, image=image, userdata=userdata,
                              nics=[{'net-id': network.id}])
 print("INFO: booted server %s (%s)" % (name, server.id))
 
+
 def write_to_file(fn, s):
     with open(os.path.join(output_dir, fn), 'w') as f:
         f.write(s)
+
 
 write_to_file('node_name', name)
 
