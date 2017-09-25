@@ -833,6 +833,7 @@ teardown_node_impl() {
 
     if [ -n "$node_volid" ]; then
         nova volume-detach $node_name $node_volid
+        sleep 5 # XXX: sleep for a bit so that the detach actually takes place
         cinder --os-volume-api-version=2 delete $node_volid
     fi
 
