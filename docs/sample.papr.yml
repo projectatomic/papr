@@ -9,7 +9,7 @@
 host:
     # REQUIRED
     # Specify the distro to provision (see DISTROS.md for full list).
-    distro: fedora/25/atomic
+    distro: fedora/26/atomic
 
     # OPTIONAL
     # Specify the minimum requirements the host must
