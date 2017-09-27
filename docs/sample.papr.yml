@@ -62,8 +62,8 @@ container:
 # Provision multiple hosts.
 cluster:
     # REQUIRED
-    # List of hosts to provision. The same keys as above are
-    # accepted.
+    # List of hosts to provision. The same keys as `host`
+    # above are accepted.
     hosts:
         # REQUIRED
         # Node hostname. Also makes the environment variable
@@ -74,6 +74,8 @@ cluster:
         ostree: latest
       - name: host2
         distro: fedora/24/cloud
+        specs:
+          secondary-disk: 10
     # OPTIONAL
     # If specified, the scripts are run on this container.
     # If omitted, the scripts are run on the first host
