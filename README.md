@@ -26,6 +26,7 @@ please see [RUNNING](docs/RUNNING.md).
 
 - [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
+- [flatpak/flatpak-builder](https://github.com/flatpak/flatpak-builder)
 - [openshift/openshift-ansible](https://github.com/openshift/openshift-ansible)
 - [ostreedev/ostree](https://github.com/ostreedev/ostree)
 - [projectatomic/atomic](https://github.com/projectatomic/atomic)
