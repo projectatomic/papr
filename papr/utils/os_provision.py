@@ -69,6 +69,7 @@ def filter_flavors(flavors, attr):
 flavors = filter_flavors(flavors, 'vcpus')
 flavors = filter_flavors(flavors, 'ram')
 flavors = filter_flavors(flavors, 'disk')
+flavors = filter_flavors(flavors, 'ephemeral')
 
 flavor = flavors[0]
 print("INFO: choosing flavor '%s'" % flavor.name)
