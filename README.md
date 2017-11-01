@@ -40,6 +40,7 @@ please see [RUNNING](docs/RUNNING.md).
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
 - [projectatomic/container-storage-setup](https://github.com/projectatomic/container-storage-setup)
 - [projectatomic/docker](https://github.com/projectatomic/docker)
+- [projectatomic/libpod](https://github.com/projectatomic/libpod)
 - [projectatomic/papr](https://github.com/projectatomic/papr)
 - [projectatomic/registries](https://github.com/projectatomic/registries)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
