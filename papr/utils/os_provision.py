@@ -160,7 +160,7 @@ if min_ephemeral > 0:
 
         # now we can safely attach the volume
         nova.volumes.create_server_volume(server.id, vol.id)
-    except:
+    except Exception:
         server.delete()
         if vol is not None:
             vol.delete()
