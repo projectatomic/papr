@@ -1,10 +1,10 @@
-FROM registry.fedoraproject.org/fedora:25
+FROM registry.fedoraproject.org/fedora:27
 MAINTAINER Jonathan Lebon <jlebon@redhat.com>
 
 # NB: we install libyaml-devel so that we can use
 # CSafeLoader in PyYAML (see related comment in the parser)
 
-RUN dnf install -y \
+RUN dnf install --setopt=tsflags=nodocs -y \
 		git \
 		gcc \
 		sudo \
@@ -15,7 +15,18 @@ RUN dnf install -y \
 		python3-pip \
 		libyaml-devel \
 		nmap-ncat && \
-	dnf clean all
+	dnf clean all && \
+	rpm -V \
+		git \
+		gcc \
+		sudo \
+		docker \
+		findutils \
+		python3-devel \
+		redhat-rpm-config \
+		python3-pip \
+		libyaml-devel \
+		nmap-ncat
 
 # There's a tricky bit here. We mount $PWD at $PWD in the
 # container so that when we do the nested docker run in the
