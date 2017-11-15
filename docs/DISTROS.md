@@ -7,6 +7,7 @@ the YAML:
 - `fedora/25/cloud`
 - `fedora/26/atomic`
 - `fedora/26/atomic/pungi`
+- `fedora/27/atomic`
 - `centos/7/atomic`
 - `centos/7/cloud`
 - `centos/7/atomic/alpha`
@@ -23,7 +24,7 @@ update them.
 
 ## Fedora streams:
 
-### fedora/26/atomic
+### fedora/26/atomic, fedora/27/atomic
 
 This is the officially supported Atomic Host image from
 Fedora. They are usually updated
