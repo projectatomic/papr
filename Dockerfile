@@ -4,7 +4,7 @@ MAINTAINER Jonathan Lebon <jlebon@redhat.com>
 # NB: we install libyaml-devel so that we can use
 # CSafeLoader in PyYAML (see related comment in the parser)
 
-RUN dnf install --setopt=tsflags=nodocs -y \
+RUN dnf install -y \
 		git \
 		gcc \
 		sudo \
