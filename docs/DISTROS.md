@@ -3,11 +3,11 @@
 Below is a full list of valid values for the `distro` key in
 the YAML:
 
-- `fedora/25/atomic`
-- `fedora/25/cloud`
 - `fedora/26/atomic`
-- `fedora/26/atomic/pungi`
+- `fedora/26/cloud`
 - `fedora/27/atomic`
+- `fedora/27/atomic/pungi`
+- `fedora/27/cloud`
 - `centos/7/atomic`
 - `centos/7/cloud`
 - `centos/7/atomic/alpha`
@@ -24,7 +24,7 @@ update them.
 
 ## Fedora streams:
 
-### fedora/26/atomic, fedora/27/atomic
+### fedora/27/atomic
 
 This is the officially supported Atomic Host image from
 Fedora. They are usually updated
@@ -33,18 +33,18 @@ weeks](https://fedoraproject.org/wiki/Changes/Two_Week_Atomic).
 You can download the image yourself from
 https://getfedora.org/en/atomic/download/.
 
-### fedora/26/atomic/pungi
+### fedora/27/atomic/pungi
 
 These are fetched from koji after the (currently daily) runs
 of [pungi](https://pagure.io/pungi).
 
-### fedora/25/atomic
+### fedora/26/atomic
 
-This is the last officially released Fedora 25 Atomic Host
+This is the last officially released Fedora 26 Atomic Host
 image, which is no longer updated. It will be removed once
-projects have migrated to Fedora 26.
+projects have migrated to Fedora 27.
 
-### fedora/24/cloud, fedora/25/cloud
+### fedora/26/cloud, fedora/27/cloud
 
 These are the officially supported Cloud images from Fedora.
 They are not usually updated after initial release. You can
