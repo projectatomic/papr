@@ -10,7 +10,7 @@ the YAML:
 - `fedora/27/cloud`
 - `centos/7/atomic`
 - `centos/7/cloud`
-- `centos/7/atomic/alpha`
+- `centos/7/atomic/smoketested`
 - `centos/7/atomic/continuous`
 
 It follows a consistent pattern:
@@ -68,7 +68,7 @@ updated every 2 to 6 weeks after RHEL releases. You can
 download the image yourself from
 https://wiki.centos.org/Download.
 
-### centos/7/atomic/alpha, centos/7/atomic/continuous
+### centos/7/atomic/smoketested, centos/7/atomic/continuous
 
 These images are built much more frequently and closely
 track the master branch of the git repositories of many core
