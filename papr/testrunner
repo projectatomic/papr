@@ -190,6 +190,8 @@ prepare_env() {
         if [ -f state/is_merge_sha ]; then
             echo "export PAPR_MERGE_COMMIT=$(cat state/sha)" >> $state/parsed/envs
         fi
+        local target_branch=$(query_github pulls/${github_pull_id} base ref)
+        echo "export PAPR_PULL_TARGET_BRANCH=${target_branch}" >> $state/parsed/envs
     fi
 }
 

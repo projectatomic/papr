@@ -97,3 +97,23 @@ ssh_wait() {
         return 1
     fi
 }
+
+# Generic query to the GitHub API
+# $1    resource
+# $2..  path to key to print
+query_github() {
+    resource=$1; shift
+    python3 -c "
+import sys
+import requests
+header = {'Authorization': 'token ${github_token}'}
+d = requests.get('https://api.github.com/repos/${github_repo}/$resource', headers=header)
+if (d.status_code != requests.codes.ok):
+    raise Exception('API Error: {}'.format(d.content))
+j = d.json()
+for q in sys.argv[1:]:
+    if q.isdigit():
+        q = int(q)
+    j = j[q]
+print(j)" "$@"
+}
