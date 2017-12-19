@@ -70,7 +70,7 @@ services:
    `@rh-atomic-bot retry`.
 
 **NOTE:  it is not required (but encouraged!) to use Homu as a merge
-bot when utlizing PAPR to automatically run tests against your PRs.
+bot when using PAPR to automatically run tests against your PRs.
 If your repo is currently only using PAPR and would like to start using
 Homu, [open an issue here](https://github.com/projectatomic/papr/issues/new)
  to request usage of Homu.**
