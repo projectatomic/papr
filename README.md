@@ -52,7 +52,7 @@ a pull request to update the list above.**
 
 In addition to PAPR, many of the projects above are also
 hooked up to
-[our instance of](https://homu-projectatomic-ci-infra.e8ca.engint.openshiftapps.com/)
+[our instance of](https://homu-projectatomic-ci.apps.ci.centos.org/)
 the upstream [Homu](https://github.com/servo/homu/) project.
 
 While PAPR deals with automatic testing of branches and
@@ -68,3 +68,9 @@ services:
    commits if the tests pass.
  - If the merge failed and you want to retest it, use
    `@rh-atomic-bot retry`.
+
+**NOTE:  it is not required (but encouraged!) to use Homu as a merge
+bot when utlizing PAPR to automatically run tests against your PRs.
+If your repo is currently only using PAPR and would like to start using
+Homu, [open an issue here](https://github.com/projectatomic/papr/issues/new)
+ to request usage of Homu.**
