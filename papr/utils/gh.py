@@ -14,6 +14,7 @@ import sys
 import json
 import argparse
 import requests
+import datetime
 from simplejson.scanner import JSONDecodeError
 
 
@@ -100,6 +101,7 @@ def _update_status(repo, commit, token, data):
     try:
         # use data= instead of json= in case we're running on an older requests
         resp = requests.post(api_url, data=json.dumps(data), headers=header)
+        _print_ratelimit_info(resp)
         body = resp.json()
     except JSONDecodeError:
         eprint("Expected JSON, but received:")
@@ -137,6 +139,7 @@ def comment(repo, token, issue, text):
 
     # use data= instead of json= in case we're running on an older requests
     resp = requests.post(api_url, data=json.dumps(data), headers=token_header)
+    _print_ratelimit_info(resp)
     body = resp.json()
 
     # pylint: disable=no-member
@@ -146,6 +149,17 @@ def comment(repo, token, issue, text):
         if body is not None:
             errmsg += "\n" + str(body)
         raise Exception(errmsg)
+
+
+def _print_ratelimit_info(resp):
+    # informational; don't croak if somehow the keys are missing/not int
+    try:
+        utc_now = int(datetime.datetime.utcnow().strftime("%s"))
+        utc_reset = int(resp.headers['X-RateLimit-Reset'])
+        print("X-RateLimit-Remaining: %s (resets in %s mins)" %
+              resp.headers['X-RateLimit-Remaining'], (utc_reset - utc_now)/60)
+    except Exception as e:
+        print("Can't print rate limit info: %s" % e)
 
 
 def eprint(*args):
