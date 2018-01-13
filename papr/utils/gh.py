@@ -156,8 +156,10 @@ def _print_ratelimit_info(resp):
     try:
         utc_now = int(datetime.datetime.utcnow().strftime("%s"))
         utc_reset = int(resp.headers['X-RateLimit-Reset'])
-        print("X-RateLimit-Remaining: %s (resets in %s mins)" %
-              (resp.headers['X-RateLimit-Remaining'], (utc_reset-utc_now)/60))
+        next_reset = int((utc_reset - utc_now) / 60)
+        print("X-RateLimit-Remaining: %s/%s (resets in %s mins)" %
+              (resp.headers['X-RateLimit-Remaining'],
+               resp.headers['X-RateLimit-Limit'], next_reset))
     except Exception as e:
         print("Can't print rate limit info: %s" % e)
 
