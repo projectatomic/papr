@@ -6,18 +6,13 @@ branches:
 required: true
 
 container:
-    image: registry.fedoraproject.org/fedora:25
+    image: registry.fedoraproject.org/fedora:27
 
-# temp workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1483553
-#packages:
-#    - '@buildsys-build'
-#    - python3-devel
+packages:
+    - '@buildsys-build'
+    - python3-devel
 
 tests:
-    # temp workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1483553
-    - if (dnf upgrade -y || :) |& grep -q -e BDB1539; then
-      rpm --rebuilddb; dnf upgrade -y;
-      fi; dnf install -y python3-devel '@buildsys-build'
     - pip3 install flake8 pylint -r requirements.txt
     - flake8 *.py papr/*.py papr/utils/*.py
     - pylint -E *.py papr
