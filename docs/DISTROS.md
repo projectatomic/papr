@@ -8,6 +8,7 @@ the YAML:
 - `fedora/27/atomic`
 - `fedora/27/atomic/pungi`
 - `fedora/27/cloud`
+- `fedora/27/cloud/pungi`
 - `centos/7/atomic`
 - `centos/7/cloud`
 - `centos/7/atomic/smoketested`
@@ -50,6 +51,12 @@ These are the officially supported Cloud images from Fedora.
 They are not usually updated after initial release. You can
 download the image yourself from
 https://alt.fedoraproject.org/en/cloud/.
+
+### fedora/27/cloud/pungi
+
+These are fetched from koji after the (currently daily) runs
+of [pungi](https://pagure.io/pungi). They are more
+up-to-date, but haven't been as thoroughly validated.
 
 ## CentOS streams:
 
