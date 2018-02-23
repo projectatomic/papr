@@ -74,6 +74,7 @@ provision_container() {
     fi
 
     sudo docker run --name $name -d \
+        --device /dev/kvm \
         --cidfile $state/cid \
         "$image" sleep infinity
 
