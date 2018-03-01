@@ -584,7 +584,8 @@ s3_upload() {
 
     if [ $s3_object = index.html ]; then
         # don't change directory in current session
-        ( cd $upload_dir && python3 $indexer )
+        local context=$(cat $state/parsed/context)
+        ( cd $upload_dir && github_context="$context" python3 $indexer )
     fi
 
     # only actually upload if we're given $s3_prefix
@@ -653,19 +654,16 @@ logged_envcmd() {
     if [ ! -f $logfile ]; then
 
         echo "### $(date --utc)" > $logfile
+        echo "### $github_url" >> $logfile
+        echo "### $github_commit" >> $logfile
 
-        if [ -n "${github_branch:-}" ]; then
-            echo "### Branch $github_branch" >> $logfile
-        else
-            echo -n "### PR #$github_pull_id" >> $logfile
-            # NB: is_merge_sha is in the top-level global state dir
-            if [ ! -f state/is_merge_sha ]; then
-                echo " (WARNING: not merge sha, check for conflicts)" \
-                    >> $logfile
-            else
-                echo >> $logfile
-            fi
+        # NB: is_merge_sha is in the top-level global state dir
+        if [ -n "${github_pull_id:-}" ] && [ ! -f state/is_merge_sha ]; then
+            echo "### (WARNING: not merge sha, check for conflicts)" >> $logfile
         fi
+
+        local context=$(cat $state/parsed/context)
+        echo "### TESTSUITE $context" >> $logfile
 
         if [ -n "${BUILD_ID:-}" ]; then
             echo "### BUILD_ID $BUILD_ID" >> $logfile

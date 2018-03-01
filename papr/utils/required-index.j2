@@ -3,6 +3,7 @@
     <title>Test results</title>
   </head>
 <body>
+  <a href="{{ url }}">{{ url }}</a> ({{ commit[:7] }})<br><br>
   Test results
   <ul>
 {% for name, passed, link in suites -%}

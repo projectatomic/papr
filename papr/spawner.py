@@ -161,18 +161,6 @@ def count_failures(suites):
 
 def update_required_context(suites):
 
-    # Prepare a fallback URL in case something goes really wrong in the tester.
-    # We just link back to the branch/PR for now, though we should probably
-    # just capture the same text we used to update the commit status.
-    if 'github_pull_id' in os.environ:
-        fallback_url = ('https://github.com/%s/pull/%s' %
-                        (os.environ['github_repo'],
-                         os.environ['github_pull_id']))
-    else:
-        fallback_url = ('https://github.com/%s/commits/%s' %
-                        (os.environ['github_repo'],
-                         os.environ['github_branch']))
-
     # don't send 'required' context if we're only targeting some testsuites
     if 'github_contexts' in os.environ:
         return
@@ -193,8 +181,8 @@ def update_required_context(suites):
             with open("state/suite-%d/url" % i) as f:
                 url = f.read().strip()
         else:
-            # something went really wrong in the tester, just use fallback url
-            url = fallback_url
+            # something went really wrong in the tester, fallback to src url
+            url = os.environ['github_url']
         result = (suite['rc'] == 0)
         results_suites.append((name, result, url))
 
@@ -209,6 +197,8 @@ def update_required_context(suites):
 
     with open(tpl_fname) as tplf:
         tpl = jinja2.Template(tplf.read(), autoescape=True)
+        tpl.globals['url'] = os.environ.get('github_url', "N/A")
+        tpl.globals['commit'] = os.environ.get('github_commit', "N/A")
         data = tpl.render(suites=results_suites)
         upload_to_s3(s3_key, data, 'text/html')
 
