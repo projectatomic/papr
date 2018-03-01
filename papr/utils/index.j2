@@ -3,6 +3,8 @@
     <title>Listing</title>
   </head>
 <body>
+  <a href="{{ url }}">{{ url }}</a> ({{ commit[:7] }})<br>
+  Testsuite: <b>{{ context }}</b><br><br>
 {% if files|length > 1 %}
   {{ files|length }} entries
 {% else %}

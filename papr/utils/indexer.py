@@ -27,6 +27,7 @@ Recursively create index.html file listings for
 directories that do not have any.
 """
 
+import os
 import jinja2
 
 from os import getcwd, listdir
@@ -42,7 +43,7 @@ def get_index(dirpath):
     return None
 
 
-def create_index(dirpath, at_top):
+def create_index(dirpath, tpl, at_top):
     "Creates a new index.html file"
 
     # get children
@@ -60,30 +61,35 @@ def create_index(dirpath, at_top):
                 index = 'index.html'
             files[name] = name + index
 
-    tpl_fname = join(dirname(realpath(__file__)), 'index.j2')
     # Render the template to index.html
-    with open(tpl_fname, 'r') as tplf:
-        tpl = jinja2.Template(tplf.read(), autoescape=True)
-
-        with open(join(dirpath, "index.html"), 'w') as f:
-            f.write(tpl.render(files=files, at_top=at_top))
+    with open(join(dirpath, "index.html"), 'w') as f:
+        f.write(tpl.render(files=files, at_top=at_top))
 
 
-def recurse(dirpath):
+def recurse(dirpath, tpl):
     for name in listdir(dirpath):
         path = join(dirpath, name)
         if isdir(path):
             if get_index(path) is None:
-                create_index(path, at_top=False)
-                recurse(path)
+                create_index(path, tpl, at_top=False)
+                recurse(path, tpl)
 
 
 def main():
     "Main entry point"
+
+    tpl_fname = join(dirname(realpath(__file__)), 'index.j2')
+    with open(tpl_fname, 'r') as tplf:
+        tpl = jinja2.Template(tplf.read(), autoescape=True)
+
+    tpl.globals['url'] = os.environ.get('github_url', "N/A")
+    tpl.globals['commit'] = os.environ.get('github_commit', "N/A")
+    tpl.globals['context'] = os.environ.get('github_context', "N/A")
+
     cwd = getcwd()
     if get_index(cwd) is None:
-        create_index(cwd, at_top=True)
-        recurse(cwd)
+        create_index(cwd, tpl, at_top=True)
+        recurse(cwd, tpl)
 
 
 if __name__ == '__main__':

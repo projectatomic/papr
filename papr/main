@@ -86,6 +86,7 @@ checkout_ref() {
     if [ -n "${github_branch:-}" ]; then
         git -C $repo fetch origin $github_branch
         sha_cmp=$(git -C $repo rev-parse FETCH_HEAD)
+        export github_url=https://github.com/$github_repo/commits/$github_branch
     else
         if git -C $repo fetch origin refs/pull/$github_pull_id/merge; then
             touch state/is_merge_sha
@@ -94,6 +95,7 @@ checkout_ref() {
             git -C $repo fetch origin refs/pull/$github_pull_id/head
             sha_cmp=$(git -C $repo rev-parse FETCH_HEAD)
         fi
+        export github_url=https://github.com/$github_repo/pull/$github_pull_id
     fi
 
     if [ -n "${github_commit:-}" ] && [ "$github_commit" != "$sha_cmp" ]; then
