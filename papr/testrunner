@@ -582,6 +582,14 @@ s3_upload() {
         fi
     fi
 
+    # go through every file we'll upload and make sure it's no more than the max
+    # size, otherwise violently truncate it
+    find $upload_dir -mindepth 1 -size +3M | while read f; do
+        local orig_size=$(stat -c %s "$f")
+        truncate -s 3M "$f"
+        echo -e "\n### FILE TRUNCATED (ORIGINAL SIZE: $orig_size)" >> "$f"
+    done
+
     if [ $s3_object = index.html ]; then
         # don't change directory in current session
         local context=$(cat $state/parsed/context)
