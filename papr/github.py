@@ -92,7 +92,7 @@ class GitHub:
 
     def _post(self, endpoint, data):
 
-        logger.debug("GitHub POST to '%s' with '%s'" % (endpoint, data))
+        logger.info("GitHub POST to '%s' with '%s'" % (endpoint, data))
 
         # we support not specifying a token to just output POSTs in the logger
         if self.token is None:

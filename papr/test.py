@@ -199,6 +199,7 @@ class BranchTest(Test):
                 'BRANCH': self.branch}
 
     def write_log_header(self, f):
+        # XXX
         f.write("### Repo: https://github.com/%s\n" % self.repo)
         f.write("### Revision: %s (branch %s)\n" % (self.rev, self.branch))
         f.write("### URL: https://github.com/%s/commits/%s\n" % (self.repo,
@@ -252,6 +253,7 @@ class PullTest(Test):
         return d
 
     def write_log_header(self, f):
+        # XXX
         f.write("### Revision: %s (PR #%d)\n" % (self.rev, self.pull_id))
         f.write("### URL: https://github.com/%s/pull/%d\n" % (self.repo,
                                                               self.pull_id))

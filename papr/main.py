@@ -29,5 +29,7 @@ def main():
         # we just use the root logger for now
         logger.setLevel(logging.DEBUG)
         logger.debug("debug logging turned on")
+    else:
+        logger.setLevel(logging.INFO)
 
     return args.func(args)

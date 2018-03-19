@@ -23,7 +23,7 @@ def add_cli_parsers(subparsers):
                          help="Testsuites to run (defaults to all)")
     branch_or_pull = runtest.add_mutually_exclusive_group(required=True)
     branch_or_pull.add_argument('--branch', help="GitHub branch to test")
-    branch_or_pull.add_argument('--pull-request', metavar='ID',
+    branch_or_pull.add_argument('--pull', metavar='ID',
                                 help="GitHub pull request ID to test")
     runtest.set_defaults(func=_cmd_runtest)
 
@@ -36,7 +36,7 @@ def _cmd_runtest(args):
     if args.branch is not None:
         tst = test.BranchTest(args.repo, args.branch)
     else:
-        tst = test.PullTest(args.repo, args.pull_request)
+        tst = test.PullTest(args.repo, args.pull)
 
     head_sha1 = tst.checkout_ref()
     if args.expected_sha1 is not None and args.expected_sha1 != head_sha1:
@@ -51,8 +51,7 @@ def _cmd_runtest(args):
     try:
         tst.find_papr_yaml()
     except:
-        # no YAML file, just quietly exit
-        logger.exception("exiting quietly...")
+        logger.info("no YAML found; exiting quietly...")
         return
 
     try:

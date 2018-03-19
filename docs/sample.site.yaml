@@ -9,67 +9,6 @@
 # rpmmd cache. If omitted, defaults to /var/cache/papr.
 cachedir: /var/cache/papr
 
-# REQUIRED
-# Describes how each PAPR test environment will be executed.
-# There are three test environments: container, host, and
-# cluster. Omitting a key (or leaving off its value) implies
-# that the test environment is not supported at this site.
-backends:
-  # OPTIONAL
-  # The 'container' backend. For now, the only implemented
-  # backend is 'docker'. If omitted, tests using 'container'
-  # will error out.
-  container:
-    type: docker
-  # OPTIONAL
-  # The 'host' backend. For now, the only implemented
-  # backend is 'nova'. If omitted, tests using 'host' will
-  # error out.
-  host:
-    type: nova
-    # OPTIONAL
-    # Additional backend-specific configuration. The config
-    # fields below are for the nova backend since it is
-    # currently the only supported one.
-    config:
-      # OPTIONAL
-      # If set to true, authentication information is
-      # obtained from the standard OpenStack environment
-      # variables. If false, you must specify the auth-url,
-      # tenant-id, username, and password. Defaults to
-      # false.
-      auth-from-env: true
-      # REQUIRED if auth-from-env is false
-      # The auth URL.
-      auth-url: https://openstack.apiserver.com:5000/v2.0
-      # REQUIRED if auth-from-env is false
-      # The auth user.
-      auth-username: openstack-user
-      # REQUIRED if auth-from-env is false
-      # The auth password .
-      auth-password: password123
-      # REQUIRED if auth-from-env is false
-      # The auth tenant name.
-      auth-tenant: papr
-      # OPTIONAL
-      # The prefix to use when naming provisioned nodes. If
-      # omitted, no prefix is used.
-      node-prefix: papr
-      # REQUIRED
-      # The name of the network to attach to provisioned nodes.
-      network: my-openstack-network
-      # REQUIRED
-      # The name of the key to use for provisioned nodes.
-      keyname: ci-keypair
-      # REQUIRED
-      # Path to the private key corresponding to the keyname.
-      privkey: /path/to/private/key
-      # OPTIONAL
-      # If provided, fip pool from which to associate a fip to provisioned node.
-      # If omitted, no fip will be assigned (this is fine if PAPR is run from
-      # the same private OpenStack network).
-      floating-ip-pool: 10.17.123.0/22
-
 # OPTIONAL
 # If set, PAPR will make comments and commit status updates
 # back to GitHub. This requires a repo scope token belonging

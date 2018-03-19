@@ -32,7 +32,8 @@ class DockerTestEnv(TestEnv):
         img_fqdn = self.spec['image']
         logger.debug("pulling image '%s'" % img_fqdn)
         try:
-            img = self.client.images.pull(img_fqdn)
+            #img = self.client.images.pull(img_fqdn)
+            pass
         except:
             raise github.GitHubFriendlyStatusError("Could not pull image %s." %
                                                    img_fqdn)
@@ -42,7 +43,8 @@ class DockerTestEnv(TestEnv):
         # exits and gets GC'ed in case we crash.
         cmd = ["sleep", "1d"]
 
-        self.container = self.client.containers.run(img.id, cmd, detach=True)
+        #self.container = self.client.containers.run(img.id, cmd, detach=True)
+        self.container = self.client.containers.run('registry.fedoraproject.org/fedora:26', cmd, detach=True)
         logger.debug("started container '%s'" % self.container.id)
 
     def teardown(self):

@@ -13,7 +13,9 @@ from . import utils
 from . import github
 from . import LOGGING_FORMAT_PREFIX
 
+from .testenv import container
 from .testenv import cluster
+from .testenv import host
 
 logger = logging.getLogger("papr")
 
@@ -59,16 +61,15 @@ class TestSuiteRun:
 
         spec = self.suite.get_testenv_spec()
         if self.suite.is_containerized():
-            ContainerClass = site.get_container_class()
-            self.testenv = ContainerClass(spec)
-        elif self.suite.is_virtualized():
-            HostClass = site.get_host_class()
-            self.testenv = HostClass(spec)
-        elif self.suite.is_clustered():
-            HostClass = site.get_host_class()
-            ContainerClass = site.get_container_class()
-            self.testenv = cluster.ClusterTestEnv(HostClass,
-                                                  ContainerClass, spec)
+            self.testenv = container.ContainerTestEnv(spec)
+        # XXX not supported for now
+        #elif self.suite.is_virtualized():
+        #    self.testenv = host.HostTestEnv(spec)
+        #elif self.suite.is_clustered():
+        #    self.testenv = cluster.ClusterTestEnv(spec)
+        else:
+            raise Exception("unknown test environment")
+
         try:
             self._provision()
             self._prepare()
@@ -91,13 +92,11 @@ class TestSuiteRun:
 
     def _prepare(self):
 
-        self._inject_site_repos()
+        #self._inject_site_repos()
 
-        # https://github.com/projectatomic/rpm-ostree/issues/687
-        if not self._on_atomic_host():
-            self._make_rpmmd_cache()
-#
-#        self._inject_extra_repos()
+        #self._make_rpmmd_cache()
+
+        #self._inject_extra_repos()
 
         self._copy_checkout()
         self._init_env_vars()
@@ -133,7 +132,9 @@ class TestSuiteRun:
 
     def _copy_checkout(self):
         self.testenv.run_checked_cmd(["mkdir", "-p", CHECKOUT_DIR])
-        self.testenv.copy_to_env(self.test.checkout_dir, CHECKOUT_DIR)
+        # XXX: wrap broken `oc cp` madness more sanely
+        # https://github.com/openshift/origin/issues/17275
+        self.testenv.copy_to_env(self.test.checkout_dir+'/.', CHECKOUT_DIR+'/')
 
     def _init_env_vars(self):
         # user-defined vars from YAML
@@ -149,47 +150,47 @@ class TestSuiteRun:
         total_duration = 0
         full_logfile = self._create_log_file(logfile)
 
-        with open(full_logfile, mode='a', encoding='utf-8') as f:
+        # write in binary mode since we directly pipe cmd output
+        with open(full_logfile, mode='a+b') as f:
             for cmd in cmds:
-                f.write(">>> %s\n" % cmd)
+                f.write(f">>> {cmd}\n".encode('utf-8'))
                 r = self._run_shell_cmd(cmd, dir, timeout)
-                # XXX: just pass fd straight through to backend
-                f.write(r.output.decode('utf-8'))
-                if len(r.output) > 0 and not r.output.endswith(b'\n'):
-                    f.write("\n")
+                shutil.copyfileobj(r.outf, f)
+                f.write(b"\n")
                 if timeout:
                     timeout -= r.duration
                 total_duration += r.duration
                 if r.rc is None or (timeout is not None and timeout < 0):
-                    f.write("### TIMED OUT AFTER %ds\n" % r.duration)
+                    f.write(b"### TIMED OUT AFTER %ds\n" % r.duration)
                     raise CmdTimeoutError()
                 else:
                     if r.rc != 0:
-                        f.write("### EXITED WITH CODE %d AFTER %ds\n" %
+                        f.write(b"### EXITED WITH CODE %d AFTER %ds\n" %
                                 (r.rc, r.duration))
                         raise CmdFailureError(r.rc)
                     else:
-                        f.write("### COMPLETED IN %ds\n" % r.duration)
+                        f.write(b"### COMPLETED IN %ds\n" % r.duration)
 
         return total_duration
 
     def _run_shell_cmd(self, cmd, dir=None, timeout=None):
         '''
-            Write out a small shell script, send it, and execute it. It's
-            easier and more portable to invoke and makes redirection simpler.
+        Write out a small shell script, send it, and execute it. It's easier
+        and more portable to invoke and makes redirection simpler.
         '''
         with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as tmpf:
             tmpf.write("set -euo pipefail\nexec 2>&1\n")
             if dir:
-                tmpf.write("cd '%s'\n" % dir)
+                tmpf.write(f"cd '{dir}'\n")
             if self.env_vars:
                 for k, v in self.env_vars.items():
-                    tmpf.write('export %s="%s"\n' % (k, v))
+                    tmpf.write(f'export {k}="{v}"\n')
             tmpf.write(cmd)
             tmpf.flush()
-            self.testenv.copy_to_env(tmpf.name, "/var/tmp/papr-worker.sh")
-            return self.testenv.run_cmd(["sh", "/var/tmp/papr-worker.sh"],
-                                        timeout)
+            # XXX: work around broken `oc cp` behaviour
+            self.testenv.copy_to_env(tmpf.name, "/var/tmp/")
+            fn = os.path.basename(tmpf.name)
+            return self.testenv.run_cmd(["sh", f"/var/tmp/{fn}"], timeout)
 
     def _create_log_file(self, name):
         fullname = os.path.join(self.result_dir, name)
@@ -225,7 +226,6 @@ class TestSuiteRun:
 
         cmds.append('./configure %s' % config_opts)
         ncpus = self.testenv.run_checked_cmd(['getconf', '_NPROCESSORS_ONLN'])
-        ncpus = ncpus.decode('utf-8')
         cmds.append('make all --jobs %s %s' % (ncpus, config_opts))
         cmds.append('make install %s' % install_opts)
         return cmds
@@ -239,8 +239,9 @@ class TestSuiteRun:
             os.mkdir(dir)
         copied_one = False
         for artifact in artifacts:
-            artifact_fn = os.path.join(CHECKOUT_DIR, artifact)
-            if self.testenv.copy_from_env(artifact_fn, dir, allow_noent=True):
+            src = os.path.join(CHECKOUT_DIR, artifact)
+            dest = os.path.join(dir, artifact)
+            if self.testenv.copy_from_env(src, dest, allow_noent=True):
                 copied_one = True
         if not copied_one:
             # nuke it so we don't upload an empty dir
@@ -320,7 +321,8 @@ class TestSuiteRun:
             if r.rc == 0:
                 break
         else:
-            logger.debug("could not makecache: %s" % r.output)
+            out = r.outf.read().decode('utf-8')
+            logger.debug(f"could not makecache: {out}")
             raise github.GitHubFriendlyStatusError("Could not makecache.")
 
         if not self.suite.can_trust_rpmmd():
@@ -358,11 +360,10 @@ class TestSuiteRun:
 
     def _get_testenv_os_info(self, var):
         if var not in self.testenv_info:
-            val = ''
             if self.testenv.run_query_cmd(['test', '-f', '/etc/os-release']):
                 val = self.testenv.run_checked_cmd([
                     'sh', '-c', '. /etc/os-release && echo -n $%s' % var])
-            self.testenv_info[var] = val.decode('utf-8')
+            self.testenv_info[var] = val
         return self.testenv_info[var]
 
 

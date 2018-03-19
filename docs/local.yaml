@@ -1,12 +1,9 @@
-# This simple site config YAML file is capable of executing tests which use the
-# local Docker instance for containerized tests, and publish results to a local
-# directory. It's an easy way to try out PAPR!
+# Simple site configuration for fully local operations. See
+# sample.site.yaml for full documentation.
 
-backends:
-  container:
-    type: docker
+cachedir: cachedir
 
 publisher:
   type: local
   config:
-    rootdir: /var/tmp/papr
+    rootdir: results

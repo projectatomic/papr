@@ -4,21 +4,23 @@ import logging
 import threading
 
 from . import TestEnv
+from . import container
+from . import host
 
 logger = logging.getLogger("papr")
 
 
 class ClusterTestEnv(TestEnv):
 
-    def __init__(self, Host, Container, spec):
+    def __init__(self, spec):
         self.spec = spec
 
         self.hosts = []
         for host_spec in spec['hosts']:
-            self.hosts.append(Host(host_spec))
+            self.hosts.append(host.HostTestEnv(host_spec))
 
         if 'container' in self.spec:
-            self.container = Container(self.spec['container'])
+            self.container = container.ContainerTestEnv(self.spec['container'])
             self.controller = self.container
         else:
             self.container = None
