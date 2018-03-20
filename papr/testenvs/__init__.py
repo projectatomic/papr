@@ -28,6 +28,12 @@ class TestEnv:
         """
         raise Exception("not implemented")
 
+    def run_query_cmd(self, cmd):
+        """
+        Run command and return True if it returns non-zero, False otherwise.
+        """
+        raise Exception("not implemented")
+
     def run_checked_cmd(self, cmd):
         """
         Run command and raise exception if it returns non-zero. On success,

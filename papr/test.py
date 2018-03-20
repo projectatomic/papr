@@ -28,6 +28,8 @@ class Test():
         self.git.update()
         # branch/PR head; but for PRs we actually test the merge commit
         self.rev = None
+        # what we actually test, same as rev except for PRs with no conflicts
+        self.test_rev = None
         self.yamlf = None
         self.suites = None
         self.results = {}
@@ -168,12 +170,14 @@ class BranchTest(Test):
     def __init__(self, repo, branch):
         super().__init__(repo)
         self.branch = branch
+        self.url = f"https://github.com/{self.repo}/commits/{self.branch}"
 
     def checkout_ref(self):
         '''Check out the target branch and return the SHA1 of HEAD'''
         self.git.fetch(self.branch)
         self.git.checkout("FETCH_HEAD")
         self.rev = self.git.get_head()
+        self.test_rev = self.rev
         return self.rev
 
     def update_github_status(self, status, msg, context=None, url=None):
@@ -199,11 +203,8 @@ class BranchTest(Test):
                 'BRANCH': self.branch}
 
     def write_log_header(self, f):
-        # XXX
-        f.write("### Repo: https://github.com/%s\n" % self.repo)
-        f.write("### Revision: %s (branch %s)\n" % (self.rev, self.branch))
-        f.write("### URL: https://github.com/%s/commits/%s\n" % (self.repo,
-                                                                 self.branch))
+        f.write(f"### Revision: {self.rev} (branch {self.branch})\n")
+        f.write(f"### URL: {self.url}")
 
 
 class PullTest(Test):
@@ -211,19 +212,23 @@ class PullTest(Test):
     def __init__(self, repo, pull_id):
         super().__init__(repo)
         self.pull_id = pull_id
-        self.rev_merge = None
+        self.is_merge_rev = False
+        self.url = f"https://github.com/{self.repo}/pull/{self.pull_id}"
 
     def checkout_ref(self):
         '''Check out the target pull request and return the SHA1 of HEAD'''
 
         # try to fetch the merge commit, otherwise, just use the head
         try:
-            self.git.fetch("refs/pull/%s/merge" % self.pull_id)
-            self.rev_merge = self.git.get_rev("FETCH_HEAD")
+            self.git.fetch("refs/pull/%d/merge" % self.pull_id)
             self.rev = self.git.get_rev("FETCH_HEAD^2")
+            self.test_rev = self.git.get_rev("FETCH_HEAD")
+            self.is_merge_rev = True
         except subprocess.CalledProcessError:
-            self.git.fetch("refs/pull/%s/head" % self.pull_id)
+            self.git.fetch("refs/pull/%d/head" % self.pull_id)
             self.rev = self.git.get_rev("FETCH_HEAD")
+            self.test_rev = self.rev
+            self.is_merge_rev = False
 
         self.git.checkout("FETCH_HEAD")
         return self.rev
@@ -232,14 +237,15 @@ class PullTest(Test):
         self.github.status(self.rev, status, context, msg, url)
         # also update merge commit; this is useful for homu's status-based
         # exemptions: https://github.com/servo/homu/pull/54
-        self.github.status(self.rev_merge, status, context, msg, url)
+        if self.is_merge_rev:
+            self.github.status(self.test_rev, status, context, msg, url)
 
     def write_github_comment(self, msg):
         self.github.comment(self.pull_id, msg)
 
     def _is_active_suite(self, suite):
         if not suite.get('pulls', True):
-            logger.debug("not running suite '%s' on PR %s",
+            logger.debug("not running suite '%s' on PR %d",
                          suite['context'], self.pull_id)
             return False
         return True
@@ -247,16 +253,14 @@ class PullTest(Test):
     def get_env_vars(self):
         d = {'REPO': self.repo,
              'COMMIT': self.rev,
-             'PULL_ID': self.pull_id}
-        if self.rev_merge:
-            d['MERGE_COMMIT'] = self.rev_merge
+             'PULL_ID': str(self.pull_id)}
+        if self.is_merge_rev:
+            d['MERGE_COMMIT'] = self.test_rev
         return d
 
     def write_log_header(self, f):
-        # XXX
-        f.write("### Revision: %s (PR #%d)\n" % (self.rev, self.pull_id))
-        f.write("### URL: https://github.com/%s/pull/%d\n" % (self.repo,
-                                                              self.pull_id))
-        if not self.rev_merge:
+        f.write(f"### Revision: {self.rev} (PR #{self.pull_id})\n")
+        f.write(f"### URL: {self.url}")
+        if not self.is_merge_rev:
             f.write(" (WARNING: not merge commit, check for conflicts)")
         f.write("\n")

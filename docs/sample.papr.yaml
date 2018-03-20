@@ -100,7 +100,7 @@ pulls: true
 # OPTIONAL
 # GitHub commit status context to use when reporting back
 # status updates to GitHub. If omitted, defaults to
-# 'Red Hat CI'.
+# 'PAPR'.
 context: 'CI Tester'
 
 # OPTIONAL

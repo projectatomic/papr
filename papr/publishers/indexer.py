@@ -28,6 +28,7 @@ directories that do not have any.
 """
 
 import os
+import sys
 import jinja2
 
 from os import getcwd, listdir
@@ -82,9 +83,9 @@ def main():
     with open(tpl_fname, 'r') as tplf:
         tpl = jinja2.Template(tplf.read(), autoescape=True)
 
-    tpl.globals['url'] = os.environ.get('github_url', "N/A")
-    tpl.globals['commit'] = os.environ.get('github_commit', "N/A")
-    tpl.globals['context'] = os.environ.get('github_context', "N/A")
+    tpl.globals['context'] = sys.argv[1]
+    tpl.globals['url'] = sys.argv[2]
+    tpl.globals['commit'] = sys.argv[3]
 
     cwd = getcwd()
     if get_index(cwd) is None:

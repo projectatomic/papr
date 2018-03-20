@@ -9,7 +9,8 @@ from . import TestEnv
 class HostTestEnv(TestEnv):
 
     def __init__(self, spec):
-        pass
+        self.spec = spec
+        self.name = None
 
     def provision(self):
         raise Exception("not implemented")

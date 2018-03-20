@@ -4,10 +4,8 @@ import os
 import yaml
 import logging
 
-from . import publishers
-
-from .testenv import nova
-from .testenv import docker
+from .publishers import local
+from .publishers import s3
 
 logger = logging.getLogger("papr")
 
@@ -51,9 +49,9 @@ def _init_publisher():
     type = config['publisher']['type']
     publisher_config = config['publisher']['config']
     if type == 'local':
-        publisher = publishers.LocalPublisher(publisher_config)
+        publisher = local.LocalPublisher(publisher_config)
     elif type == 's3':
-        publisher = publishers.S3Publisher(publisher_config)
+        publisher = s3.S3Publisher(publisher_config)
     else:
         raise Exception("unknown publisher type: %s" % type)
 
@@ -62,29 +60,3 @@ def _init_cachedir():
     global cachedir
     cachedir = config.get('cachedir', '/var/tmp/papr-cache')
     os.makedirs(cachedir, exist_ok=True)
-
-
-def get_container_class():
-
-    if ('container' not in config['backends'] or
-            not config['backends']['container']):
-        raise Exception("no container backend supported")
-
-    type = config['backends']['container']['type']
-    if type == 'docker':
-        return docker.DockerTestEnv
-
-    raise Exception("unknown container backend: %s" % type)
-
-
-def get_host_class():
-
-    if ('host' not in config['backends'] or
-            not config['backends']['host']):
-        raise Exception("no host backend supported")
-
-    type = config['backends']['host']['type']
-    if type == 'nova':
-        return nova.NovaTestEnv
-
-    raise Exception("unknown host backend: %s" % type)

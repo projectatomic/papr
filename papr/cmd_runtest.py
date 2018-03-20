@@ -23,7 +23,7 @@ def add_cli_parsers(subparsers):
                          help="Testsuites to run (defaults to all)")
     branch_or_pull = runtest.add_mutually_exclusive_group(required=True)
     branch_or_pull.add_argument('--branch', help="GitHub branch to test")
-    branch_or_pull.add_argument('--pull', metavar='ID',
+    branch_or_pull.add_argument('--pull', metavar='ID', type=int,
                                 help="GitHub pull request ID to test")
     runtest.set_defaults(func=_cmd_runtest)
 

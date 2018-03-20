@@ -13,9 +13,9 @@ from . import utils
 from . import github
 from . import LOGGING_FORMAT_PREFIX
 
-from .testenv import container
-from .testenv import cluster
-from .testenv import host
+from .testenvs import container
+from .testenvs import cluster
+from .testenvs import host
 
 logger = logging.getLogger("papr")
 
@@ -58,6 +58,10 @@ class TestSuiteRun:
             handler.setFormatter(logging.Formatter(
                 LOGGING_FORMAT_PREFIX + "[%s] %%(message)s" % self.name
             ))
+
+        # set up the publisher with our info for the indexer template
+        site.publisher.set_template_vars(
+            self.name, self.test.url, self.test.test_rev)
 
         spec = self.suite.get_testenv_spec()
         if self.suite.is_containerized():
@@ -253,7 +257,7 @@ class TestSuiteRun:
     def _on_atomic_host(self):
         if self.suite.is_container_controlled():
             return False
-        return self.testenv.run_cmd(["test", "-f", "/run/ostreed"]).rc == 0
+        return self.testenv.run_query_cmd(["test", "-f", "/run/ostreed"])
 
     def update_github_status(self, state, msg, url=None):
         self.test.update_github_status(state, msg, self.name, url)

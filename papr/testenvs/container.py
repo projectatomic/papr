@@ -25,6 +25,9 @@ class ContainerTestEnv(TestEnv):
         if self.name:
             ocp.delete('pod', self.name)
 
+    def run_query_cmd(self, cmd):
+        return self.run_cmd(cmd).rc == 0
+
     def run_checked_cmd(self, cmd):
         r = self.run_cmd(cmd)
         out = r.outf.read().decode('utf-8')
@@ -55,7 +58,7 @@ class ContainerTestEnv(TestEnv):
         return True
 
     def _path_exists(self, path):
-        return self.run_cmd(['test', '-e', path]).rc == 0
+        return self.run_query_cmd(['test', '-e', path])
 
     def _generate_pod(self):
         pod = {

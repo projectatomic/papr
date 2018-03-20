@@ -88,7 +88,7 @@ class GitHub:
 
     def comment(self, issue, text):
         data = {'body': text}
-        self._post("issues/%s/comments" % issue, data)
+        self._post("issues/%d/comments" % issue, data)
 
     def _post(self, endpoint, data):
 

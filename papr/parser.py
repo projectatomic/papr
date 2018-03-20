@@ -69,10 +69,10 @@ class SuiteParser:
         if suite is None:
 
             # The 'context' key is special. It's optional on the
-            # first suite (defaulting to 'Red Hat CI'), but
+            # first suite (defaulting to 'PAPR'), but
             # required on subsequent suites.
             if 'context' not in new:
-                new['context'] = "Red Hat CI"
+                new['context'] = "PAPR"
 
         if 'inherit' in new and type(new['inherit']) is not bool:
             raise ParserError("expected 'bool' value for 'inherit' key")

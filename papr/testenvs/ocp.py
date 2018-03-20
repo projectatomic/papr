@@ -31,7 +31,8 @@ def exec(pod, cmd, outf=None, timeout=None):
     return subprocess.run(oc_cmd, timeout=timeout,
                           stdout=outf, stderr=subprocess.STDOUT)
 
-def wait_for_pod(pod, timeout=120):
+# XXX: figure out recommendations to lower that
+def wait_for_pod(pod, timeout=180):
     # 🙉 🙈
     logger.debug(f"waiting for {pod} to be running")
     for i in range(timeout):
