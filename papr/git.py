@@ -13,6 +13,11 @@ class Git:
     def __init__(self, dir, repo_url):
         self.dir = dir
         self.repo_url = repo_url
+        self._git_env = dict(os.environ)
+        self._git_env.update({
+            "GIT_COMMITTER_NAME": "papr",
+            "GIT_COMMITTER_EMAIL": "papr@example.com"
+        })
 
     def update(self):
         # use .git here in case the clone fails
@@ -24,7 +29,7 @@ class Git:
 
     def cmd(self, *args):
         return subprocess.run(['git'] + list(args),
-                              cwd=self.dir, check=True)
+                              cwd=self.dir, check=True, env=self._git_env)
 
     def clone(self):
         return self.cmd("clone", self.repo_url, ".")
@@ -37,7 +42,8 @@ class Git:
 
     def get_rev(self, ref):
         p = subprocess.run(['git', "rev-parse", ref],
-                           cwd=self.dir, check=True, stdout=subprocess.PIPE)
+                           cwd=self.dir, check=True, env=self._git_env,
+                           stdout=subprocess.PIPE)
         return p.stdout.strip().decode('ascii')
 
     def get_head(self):
