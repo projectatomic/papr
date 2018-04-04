@@ -23,7 +23,8 @@ class Git:
             self.fetch()
 
     def cmd(self, *args):
-        return subprocess.run(['git', '-C', self.dir] + list(args), check=True)
+        return subprocess.run(['git'] + list(args),
+                              cwd=self.dir, check=True)
 
     def clone(self):
         return self.cmd("clone", self.repo_url, ".")
@@ -35,8 +36,8 @@ class Git:
         return self.cmd(*args)
 
     def get_rev(self, ref):
-        p = subprocess.run(['git', '-C', self.dir, "rev-parse", ref],
-                           check=True, stdout=subprocess.PIPE)
+        p = subprocess.run(['git', "rev-parse", ref],
+                           cwd=self.dir, check=True, stdout=subprocess.PIPE)
         return p.stdout.strip().decode('ascii')
 
     def get_head(self):
