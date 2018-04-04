@@ -58,5 +58,5 @@ def _init_publisher():
 
 def _init_cachedir():
     global cachedir
-    cachedir = config.get('cachedir', '/var/tmp/papr-cache')
+    cachedir = config.get('cachedir', '/var/cache/papr')
     os.makedirs(cachedir, exist_ok=True)
