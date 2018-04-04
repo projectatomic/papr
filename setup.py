@@ -13,5 +13,5 @@ setup(
     entry_points={
         "console_scripts": ["papr = papr.main:main"],
     },
-    package_data={"papr": ["data/*", "schema/*", "templates/*"]}
+    package_data={"papr": ["data/*", "schema/*", "publishers/templates/*"]}
 )
