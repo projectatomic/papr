@@ -19,7 +19,7 @@ github:
   # GITHUB_TOKEN env var. Defaults to false.
   auth-from-env: true
   # OPTIONAL
-  # The auto token if auth-from-env is false.
+  # The auth token if auth-from-env is false.
   auth-token: asdf
 
 # OPTIONAL
