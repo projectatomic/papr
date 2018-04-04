@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import shutil
 import logging
 
@@ -81,6 +82,6 @@ class S3Publisher(Publisher):
 
     def _run_indexer(self, dir):
         # XXX: we should make this a proper python module
-        utils.checked_cmd(["python3", os.path.join(PKG_DIR, "indexer.py"),
+        utils.checked_cmd([sys.executable, os.path.join(PKG_DIR, "indexer.py"),
                            self.test_name, self.test_url, self.test_sha1],
                           cwd=dir)
