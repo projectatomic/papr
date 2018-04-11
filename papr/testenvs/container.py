@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-import os
 import time
-import uuid
 import tempfile
 import subprocess
 
@@ -70,24 +68,24 @@ class ContainerTestEnv(TestEnv):
                     "app": "papr",
                     "papr.projectatomic.redhat.com/test-pod": "true"
                 },
-                ## if running in ocp, add owner reference
-                ## XXX: need to figure out easy way to self introspect that info
-                #"ownerReferences": [
-                #    {
-                #        "apiVersion": "v1",
-                #        "blockOwnerDeletion": True,
-                #        "kind": "Pod",
-                #        "name": "papr-master-pod",
-                #        "uid": "57163e1c-23e8-11e8-aed5-28d244a18c12"
-                #    }
-                #]
+                # if running in ocp, add owner reference
+                # XXX: need to figure out easy way to self introspect that info
+                # "ownerReferences": [
+                #     {
+                #         "apiVersion": "v1",
+                #         "blockOwnerDeletion": True,
+                #         "kind": "Pod",
+                #         "name": "papr-master-pod",
+                #         "uid": "57163e1c-23e8-11e8-aed5-28d244a18c12"
+                #     }
+                # ]
             },
             "spec": {
                 "restartPolicy": "Never",
                 "containers": [
                     {
                         "name": "test-pod",
-                        #"imagePullPolicy": "Always", XXX
+                        # "imagePullPolicy": "Always", XXX
                         "imagePullPolicy": "IfNotPresent",
                         "command": ["sleep", "infinity"],
                         "securityContext": {

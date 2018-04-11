@@ -14,8 +14,6 @@ from . import github
 from . import LOGGING_FORMAT_PREFIX
 
 from .testenvs import container
-from .testenvs import cluster
-from .testenvs import host
 
 logger = logging.getLogger("papr")
 
@@ -67,10 +65,10 @@ class TestSuiteRun:
         if self.suite.is_containerized():
             self.testenv = container.ContainerTestEnv(spec)
         # XXX not supported for now
-        #elif self.suite.is_virtualized():
-        #    self.testenv = host.HostTestEnv(spec)
-        #elif self.suite.is_clustered():
-        #    self.testenv = cluster.ClusterTestEnv(spec)
+        # elif self.suite.is_virtualized():
+        #     self.testenv = host.HostTestEnv(spec)
+        # elif self.suite.is_clustered():
+        #     self.testenv = cluster.ClusterTestEnv(spec)
         else:
             raise Exception("unknown test environment")
 
@@ -96,11 +94,11 @@ class TestSuiteRun:
 
     def _prepare(self):
 
-        #self._inject_site_repos()
+        # self._inject_site_repos()
 
-        #self._make_rpmmd_cache()
+        # self._make_rpmmd_cache()
 
-        #self._inject_extra_repos()
+        # self._inject_extra_repos()
 
         self._copy_checkout()
         self._init_env_vars()
@@ -321,7 +319,7 @@ class TestSuiteRun:
         retries = 5
         for i in range(retries):
             r = self.testenv.run_cmd([mgr, 'makecache'])
-            #r = self.testenv.run_cmd(['touch', '/var/cache/dnf/foo.solv'])
+            # r = self.testenv.run_cmd(['touch', '/var/cache/dnf/foo.solv'])
             if r.rc == 0:
                 break
         else:

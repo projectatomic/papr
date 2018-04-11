@@ -16,19 +16,19 @@ host:
     # fulfill. The values defined below are the defaults
     # used when no minimums are specified.
     specs:
-      # OPTIONAL
-      # Minimum amount of RAM in MB.
-      ram: 2048
-      # OPTIONAL
-      # Minimum number of CPUs.
-      cpus: 1
-      # OPTIONAL
-      # Minimum size of primary disk in GB.
-      disk: 20
-      # OPTIONAL
-      # Minimum size of secondary disk in GB. Set to 0 if no
-      # secondary disk is needed.
-      secondary-disk: 0
+        # OPTIONAL
+        # Minimum amount of RAM in MB.
+        ram: 2048
+        # OPTIONAL
+        # Minimum number of CPUs.
+        cpus: 1
+        # OPTIONAL
+        # Minimum size of primary disk in GB.
+        disk: 20
+        # OPTIONAL
+        # Minimum size of secondary disk in GB. Set to 0 if no
+        # secondary disk is needed.
+        secondary-disk: 0
 
     # OPTIONAL
     # If using an Atomic Host variant, you can specify which
@@ -38,18 +38,18 @@ host:
 
     # Otherwise, you may specify a tree by providing a dict:
     ostree:
-      # OPTIONAL
-      # Specify the remote to which to rebase. If omitted,
-      # the current remote is used.
-      remote: http://example.com/remote/repo
-      # OPTIONAL
-      # Specify the branch to which to rebase. If omitted,
-      # the current branch is used.
-      branch: my/branch
-      # OPTIONAL
-      # Specify the version or checksum to deploy. If
-      # omitted, the latest commit is used.
-      revision: 7.145.42
+        # OPTIONAL
+        # Specify the remote to which to rebase. If omitted,
+        # the current remote is used.
+        remote: http://example.com/remote/repo
+        # OPTIONAL
+        # Specify the branch to which to rebase. If omitted,
+        # the current branch is used.
+        branch: my/branch
+        # OPTIONAL
+        # Specify the version or checksum to deploy. If
+        # omitted, the latest commit is used.
+        revision: 7.145.42
 
 # REQUIRED (only one of 'host' or 'container' or 'cluster')
 # Provision a container.
@@ -69,13 +69,13 @@ cluster:
         # Node hostname. Also makes the environment variable
         # $RHCI_{name}_IP available (with dots and dashes
         # replaced by underscores).
-      - name: host1
-        distro: centos/7/atomic
-        ostree: latest
-      - name: host2
-        distro: fedora/25/cloud
-        specs:
-          secondary-disk: 10
+        - name: host1
+          distro: centos/7/atomic
+          ostree: latest
+        - name: host2
+          distro: fedora/25/cloud
+          specs:
+              secondary-disk: 10
     # OPTIONAL
     # If specified, the scripts are run on this container.
     # If omitted, the scripts are run on the first host
@@ -205,7 +205,7 @@ artifacts:
 # other two if inherited, so that there is no need to
 # explicitly unset them.
 host:
-  distro: fedora/27/atomic
+    distro: fedora/27/atomic
 
 # There is no support to append to an inherited list. You
 # must redefine them as needed.
@@ -215,4 +215,4 @@ packages:
     - autoconf
 
 env:
-  VAR1: newval1
+    VAR1: newval1
