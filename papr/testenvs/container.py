@@ -67,7 +67,8 @@ class ContainerTestEnv(TestEnv):
             "metadata": {
                 "generateName": "papr-testpod-",
                 "labels": {
-                    "app": "papr"
+                    "app": "papr",
+                    "papr.projectatomic.redhat.com/test-pod": "true"
                 },
                 ## if running in ocp, add owner reference
                 ## XXX: need to figure out easy way to self introspect that info
