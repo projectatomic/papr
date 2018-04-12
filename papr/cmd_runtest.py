@@ -50,8 +50,8 @@ def _cmd_runtest(args):
 
     try:
         tst.find_papr_yaml()
-    except:
-        logger.info("no YAML found; exiting quietly...")
+    except Exception as e:
+        logger.exception("exiting quietly...")
         return
 
     try:
@@ -80,8 +80,12 @@ def _cmd_runtest(args):
                                  'file.'.format(msg, e.msg, basename))
         return
 
-    except:
+    except Exception as e:
         tst.update_github_status('error', 'An internal error occurred.')
         raise
+
+    if len(tst.suites) == 0:
+        logger.info("no active suites to run, exiting quietly...")
+        return
 
     tst.run_suites()
