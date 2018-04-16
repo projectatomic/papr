@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-import collections
-
 from . import TestEnv
 
 

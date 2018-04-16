@@ -4,11 +4,7 @@ import os
 import shutil
 import logging
 
-import boto3
-import boto3.session
-
 from . import Publisher
-from . import PKG_DIR
 
 logger = logging.getLogger("papr")
 

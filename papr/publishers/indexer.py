@@ -27,7 +27,6 @@ Recursively create index.html file listings for
 directories that do not have any.
 """
 
-import os
 import sys
 import jinja2
 

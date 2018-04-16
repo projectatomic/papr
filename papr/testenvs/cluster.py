@@ -41,8 +41,8 @@ class ClusterTestEnv(TestEnv):
         Provision each container in it's own in parellel.
         """
         threads = []
-        for host in self.hosts:
-            threads.append(threading.Thread(target=host.provision))
+        for h in self.hosts:
+            threads.append(threading.Thread(target=h.provision))
             threads[-1].start()
         if self.container is not None:
             self.container.provision()
@@ -53,8 +53,8 @@ class ClusterTestEnv(TestEnv):
         """
         Tears down resources.
         """
-        for host in self.hosts:
-            host.teardown()
+        for h in self.hosts:
+            h.teardown()
         if self.container is not None:
             self.container.teardown()
 
