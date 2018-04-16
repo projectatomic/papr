@@ -204,7 +204,7 @@ class BranchTest(Test):
 
     def write_log_header(self, f):
         f.write(f"### Revision: {self.rev} (branch {self.branch})\n")
-        f.write(f"### URL: {self.url}")
+        f.write(f"### URL: {self.url}\n")
 
 
 class PullTest(Test):
