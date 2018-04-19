@@ -90,6 +90,12 @@ class ContainerTestEnv(TestEnv):
                         "command": ["sleep", "infinity"],
                         "securityContext": {
                             'runAsUser': 0
+                        },
+                        "resources": {
+                            "requests": {
+                                "memory": "2Gi",
+                                "cpu": "1.5",
+                            }
                         }
                     }
                 ]
