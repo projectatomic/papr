@@ -89,7 +89,7 @@ class TestSuiteRun:
 
     def _provision(self):
         s = self.suite.get_testenv_type()
-        self.update_github_status('pending', "Provisioning %s..." % s)
+        self.update_github_status('pending', "Scheduling %s..." % s)
         self.testenv.provision()
 
     def _prepare(self):

@@ -32,12 +32,13 @@ def exec(pod, cmd, outf=None, timeout=None):
                           stdout=outf, stderr=subprocess.STDOUT)
 
 
-# XXX: figure out recommendations to lower that
-def wait_for_pod(pod, timeout=180):
-    # 🙉 🙈
+# wait for a pod to be scheduled, die after 6h
+def wait_for_pod(pod, timeout=3600*6):
+    # use dirty polling 🙉 🙈
     logger.debug(f"waiting for {pod} to be running")
-    for i in range(timeout):
-        time.sleep(1)
+    interval = 5  # check every 5s
+    for i in range(0, timeout, interval):
+        time.sleep(interval)
         p = subprocess.run(["oc", "get", "pod", pod,
                             "-o=jsonpath={.status.phase}"],
                            check=True, stdout=subprocess.PIPE,
@@ -45,6 +46,10 @@ def wait_for_pod(pod, timeout=180):
         phase = p.stdout.strip()
         if phase == 'Running':
             return
+        elif phase == 'Pending':
+            continue
+        else:
+            raise RuntimeError(f"{pod} in unknown phase '{phase}'")
     raise RuntimeError(f"{pod} in phase '{phase}' after {timeout}s")
 
 
