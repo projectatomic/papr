@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import time
 import logging
 import subprocess
@@ -26,6 +27,7 @@ class Test():
         self.git = git.Git(self.checkout_dir, "https://github.com/" + repo)
         self.github = github.GitHub(repo)
         self.git.update()
+        self.url = None # URL to branch or PR that triggered us
         # branch/PR head; but for PRs we actually test the merge commit
         self.rev = None
         # what we actually test, same as rev except for PRs with no conflicts
@@ -146,6 +148,8 @@ class Test():
         tpl_fname = os.path.join(PKG_DIR, 'templates', 'required-index.j2')
         with open(tpl_fname) as tplf:
             tpl = jinja2.Template(tplf.read(), autoescape=True)
+            tpl.globals['url'] = self.url
+            tpl.globals['commit'] = self.test_rev
 
         data = tpl.render(suites=results_suites)
         dest = '%s/%s.%s/%s' % (self.repo, self.rev,
