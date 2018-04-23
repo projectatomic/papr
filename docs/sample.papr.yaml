@@ -57,6 +57,23 @@ container:
     # REQUIRED
     # Specify an FQIN or Docker Hub image.
     image: registry.fedoraproject.org/fedora:27
+    # OPTIONAL
+    # Whether the container requires virtualization. This
+    # will ensure that it is scheduled on a node which
+    # provides access to /dev/kvm. If omitted, defaults to
+    # false.
+    kvm: true
+    # OPTIONAL
+    # Specify the minimum requirements the container must
+    # fulfill. The values defined below are the defaults
+    # used when no minimums are specified.
+    specs:
+        # OPTIONAL
+        # Minimum amount of RAM in MB.
+        ram: 2048
+        # OPTIONAL
+        # Minimum amount of CPUs in millicores.
+        cpus: 1500
 
 # REQUIRED (only one of 'host' or 'container' or 'cluster')
 # Provision multiple hosts.

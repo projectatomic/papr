@@ -59,6 +59,10 @@ class ContainerTestEnv(TestEnv):
         return self.run_query_cmd(['test', '-e', path])
 
     def _generate_pod(self):
+
+        ram = self.spec.get('specs', {}).get('ram', 2048)
+        cpus = self.spec.get('specs', {}).get('cpus', 1500)
+
         pod = {
             "apiVersion": "v1",
             "kind": "Pod",
@@ -92,8 +96,8 @@ class ContainerTestEnv(TestEnv):
                         },
                         "resources": {
                             "requests": {
-                                "memory": "2Gi",
-                                "cpu": "1.5",
+                                "memory": f"{ram}Mi",
+                                "cpu": f"{cpus}m",
                             }
                         }
                     }
@@ -102,4 +106,6 @@ class ContainerTestEnv(TestEnv):
         }
 
         pod["spec"]["containers"][0]["image"] = self.spec["image"]
+        if self.spec.get("kvm"):
+            pod["spec"]["nodeSelector"] = {"oci_kvm_hook": "allowed"}
         return pod
