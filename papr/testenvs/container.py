@@ -85,8 +85,7 @@ class ContainerTestEnv(TestEnv):
                 "containers": [
                     {
                         "name": "test-pod",
-                        # "imagePullPolicy": "Always", XXX
-                        "imagePullPolicy": "IfNotPresent",
+                        "imagePullPolicy": "Always",
                         "command": ["sleep", "infinity"],
                         "securityContext": {
                             'runAsUser': 0
