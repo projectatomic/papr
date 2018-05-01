@@ -59,7 +59,7 @@ ssh_wait() {
     local node_addr=$1; shift
     local node_key=$1; shift
 
-    timeout 210s "$THIS_DIR/utils/sshwait" $node_addr
+    timeout 300s "$THIS_DIR/utils/sshwait" $node_addr
 
     # We have to be extra cautious here -- OpenStack
     # networking takes some time to settle, so we wait until
