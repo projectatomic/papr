@@ -78,8 +78,9 @@ class Test():
 
     def run_suites(self):
         assert self.suites
+        self._initial_required_context_update()
         self._spawn_suites()
-        self._update_required_context()
+        self._final_required_context_update()
 
     def _spawn_suites(self):
 
@@ -125,7 +126,21 @@ class Test():
         if len(failed) > 0:
             raise Exception("the following suites failed: %s" % str(failed))
 
-    def _update_required_context(self):
+    def _initial_required_context_update(self):
+
+        required_suites = [s for s in self.suites if s.get('required')]
+        total = len(required_suites)
+        if total == 0:
+            return
+
+        # OK, there are required testsuites active -- let's set the context to
+        # pending
+        context = 'required'
+        if self.experimental:
+            context = 'ex-required'
+        self.update_github_status('pending', "Waiting...", context)
+
+    def _final_required_context_update(self):
 
         required_suites = [s for s in self.suites if s.get('required')]
         total = len(required_suites)
