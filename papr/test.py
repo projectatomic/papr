@@ -118,10 +118,6 @@ class Test():
 
     def _update_required_context(self):
 
-        # only send 'required' context for branches for now
-        if not isinstance(self, BranchTest):
-            return
-
         required_suites = [s for s in self.suites if s.get('required')]
         total = len(required_suites)
         if total == 0:
