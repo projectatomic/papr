@@ -33,7 +33,7 @@ class Test():
         self.test_rev = None
         self.yamlf = None
         self.suites = None
-        self.experimental = True
+        self.experimental = False
         self.results = {}
 
     def find_papr_yaml(self):
@@ -53,7 +53,7 @@ class Test():
                 #    would conflict with the old PAPR run
                 #  - update the 'required' context as 'ex-required' to
                 #    differentiate between the OCP and old PAPR approach
-                if f == '.papr-ex.yaml':
+                if name == '.papr-ex.yaml':
                     self.experimental = True
                 return
 
@@ -266,6 +266,7 @@ class PullTest(Test):
     def update_github_status(self, status, msg, context=None, url=None):
         if self.experimental and context != 'ex-required':
             logger.debug("skipping GitHub status update for '%s'", context)
+            return
         self.github.status(self.rev, status, context, msg, url)
         # also update merge commit; this is useful for homu's status-based
         # exemptions: https://github.com/servo/homu/pull/54
