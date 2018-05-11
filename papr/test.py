@@ -34,6 +34,7 @@ class Test():
         self.test_rev = None
         self.yamlf = None
         self.suites = None
+        self.experimental = True
         self.results = {}
 
     def find_papr_yaml(self):
@@ -42,10 +43,19 @@ class Test():
             return
 
         # try new name, fall back to old name until projects migrate over
-        for name in ['.papr.yml', '.papr.yaml', '.redhat-ci.yml']:
+        for name in ['.papr-ex.yaml', '.papr.yml', '.papr.yaml']:
             f = os.path.join(self.checkout_dir, name)
             if os.path.isfile(f):
                 self.yamlf = f
+                # repos can opt in to the new OCP model while still relying on
+                # the old PAPR by defining a separate .papr-ex.yaml file --
+                # this will change our behaviour in the following ways:
+                #  - don't update PR statuses for each testsuite, since it
+                #    would conflict with the old PAPR run
+                #  - update the 'required' context as 'ex-required' to
+                #    differentiate between the OCP and old PAPR approach
+                if f == '.papr-ex.yaml':
+                    self.experimental = True
                 return
 
         raise Exception("No PAPR YAML file found in repo root!")
@@ -151,9 +161,12 @@ class Test():
         dest = '%s/%s.%s/%s' % (self.repo, self.rev,
                                 int(time.time() * 1e9), 'index.html')
         url = site.publisher.publish_filedata(data, dest, 'text/html')
+        context = 'required'
+        if self.experimental:
+            context = 'ex-required'
         self.update_github_status('success' if failures == 0 else 'failure',
                                   "%d/%d PASSES" % (total - failures, total),
-                                  'required', url)
+                                  context, url)
 
     # this is called by the individual testsuites
     def publish(self, dir):
@@ -181,6 +194,9 @@ class BranchTest(Test):
         return self.rev
 
     def update_github_status(self, status, msg, context=None, url=None):
+        if self.experimental and context != 'ex-required':
+            logger.debug("skipping GitHub status update for '%s'", context)
+            return
         self.github.status(self.rev, status, context, msg, url)
 
     def write_github_comment(self, msg):
@@ -234,6 +250,8 @@ class PullTest(Test):
         return self.rev
 
     def update_github_status(self, status, msg, context=None, url=None):
+        if self.experimental and context != 'ex-required':
+            logger.debug("skipping GitHub status update for '%s'", context)
         self.github.status(self.rev, status, context, msg, url)
         # also update merge commit; this is useful for homu's status-based
         # exemptions: https://github.com/servo/homu/pull/54
