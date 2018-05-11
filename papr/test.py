@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import time
 import logging
 import subprocess
@@ -27,7 +26,7 @@ class Test():
         self.git = git.Git(self.checkout_dir, "https://github.com/" + repo)
         self.github = github.GitHub(repo)
         self.git.update()
-        self.url = None # URL to branch or PR that triggered us
+        self.url = None  # URL to branch or PR that triggered us
         # branch/PR head; but for PRs we actually test the merge commit
         self.rev = None
         # what we actually test, same as rev except for PRs with no conflicts
