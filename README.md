@@ -25,6 +25,7 @@ please see [RUNNING](docs/RUNNING.md).
 ### Monitored projects
 
 - [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
+- [containers/libpod](https://github.com/containers/libpod)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
 - [flatpak/flatpak-builder](https://github.com/flatpak/flatpak-builder)
 - [openshift/openshift-ansible](https://github.com/openshift/openshift-ansible)
@@ -40,7 +41,6 @@ please see [RUNNING](docs/RUNNING.md).
 - [projectatomic/commissaire-service](https://github.com/projectatomic/commissaire-service)
 - [projectatomic/container-storage-setup](https://github.com/projectatomic/container-storage-setup)
 - [projectatomic/docker](https://github.com/projectatomic/docker)
-- [projectatomic/libpod](https://github.com/projectatomic/libpod)
 - [projectatomic/papr](https://github.com/projectatomic/papr)
 - [projectatomic/registries](https://github.com/projectatomic/registries)
 - [projectatomic/rpm-ostree](https://github.com/projectatomic/rpm-ostree)
