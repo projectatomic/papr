@@ -695,7 +695,7 @@ logged_envcmd() {
     local start=$(date +%s)
 
     rc=0
-    timed_envcmd $timeout sh /var/tmp/worker.sh | tee -a $logfile || rc=$?
+    timed_envcmd $timeout sh /var/tmp/worker.sh >> $logfile || rc=$?
 
     local duration=$(($(date +%s) - $start))
 
