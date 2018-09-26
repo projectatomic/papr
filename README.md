@@ -25,6 +25,7 @@ please see [RUNNING](docs/RUNNING.md).
 ### Monitored projects
 
 - [autotest/autotest-docker](https://github.com/autotest/autotest-docker.git)
+- [containers/conmon](https://github.com/containers/conmon)
 - [containers/libpod](https://github.com/containers/libpod)
 - [flatpak/flatpak](https://github.com/flatpak/flatpak)
 - [flatpak/flatpak-builder](https://github.com/flatpak/flatpak-builder)
