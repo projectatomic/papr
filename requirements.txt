@@ -1,6 +1,8 @@
 # we're not compatible with the latest nova API
-python-novaclient==7.1.0
-python-cinderclient==3.2.0
+python-novaclient==13.0.0
+python-cinderclient==4.1.0
+python-neutronclient==6.12.0
+python-glanceclient==2.16.0
 PyYAML==3.12
 jinja2==2.9.6
 awscli==1.11.72

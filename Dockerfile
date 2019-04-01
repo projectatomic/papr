@@ -13,6 +13,7 @@ RUN dnf install -y \
 		python3-devel \
 		redhat-rpm-config \
 		python3-pip \
+		openssl-devel \
 		libyaml-devel \
 		nmap-ncat && \
 	dnf clean all
@@ -40,14 +41,18 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e os_keyname \
              -e os_privkey \
              -e os_network \
-             -e os_floating_ip_pool \
              -e s3_prefix \
              -e site_repos \
              -e OS_AUTH_URL \
-             -e OS_TENANT_ID \
-             -e OS_TENANT_NAME \
-             -e OS_USERNAME \
+             -e OS_PROJECT_DOMAIN_ID \
+             -e OS_REGION_NAME \
+             -e OS_PROJECT_NAME \
+             -e OS_USER_DOMAIN_NAME \
+             -e OS_IDENTITY_API_VERSION \
+             -e OS_INTERFACE \
              -e OS_PASSWORD \
+             -e OS_USERNAME \
+             -e OS_PROJECT_ID \
              -e AWS_ACCESS_KEY_ID \
              -e AWS_SECRET_ACCESS_KEY \
              -e BUILD_ID \

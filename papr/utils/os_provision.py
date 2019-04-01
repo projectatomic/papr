@@ -11,12 +11,12 @@
       - os_min_ram
       - os_min_vcpus
       - os_min_disk
-      - os_min_ephemeral
-      - os_keyname
       - os_network
+      - BUILD_ID (optional)
       - os_user_data
       - os_name_prefix
-      - os_floating_ip_pool (optional)
+      - os_keyname
+      - os_min_ephemeral
 '''
 
 import os
@@ -24,30 +24,49 @@ import sys
 import uuid
 import time
 from novaclient import client as novaclient
+from glanceclient import client as glanceclient
 from cinderclient import client as cinderclient
+from neutronclient.v2_0 import client as neutronclient
+from keystoneauth1 import session as ksession
+from keystoneauth1.identity import v3
 
 # XXX: clean this up
 
+auth = v3.Password(auth_url=os.environ['OS_AUTH_URL'],
+                   project_id=os.environ['OS_PROJECT_ID'],
+                   username=os.environ['OS_USERNAME'],
+                   password=os.environ['OS_PASSWORD'],
+                   user_domain_name=os.environ['OS_USER_DOMAIN_NAME'],
+                   project_domain_id=os.environ['OS_PROJECT_DOMAIN_ID'])
+session = ksession.Session(auth=auth)
+
 output_dir = sys.argv[1]
 
-nova = novaclient.Client(2, auth_url=os.environ['OS_AUTH_URL'],
-                         tenant_id=os.environ['OS_TENANT_ID'],
-                         username=os.environ['OS_USERNAME'],
-                         password=os.environ['OS_PASSWORD'])
+nova = novaclient.Client(2, session=session)
+glance = glanceclient.Client(2, session=session)
+neutron = neutronclient.Client(session=session)
+cinder = cinderclient.Client(2, session=session)
 
-print("INFO: authenticating")
-nova.authenticate()
+def get_image(name):
+    # it's possible multiple images match, e.g. during automated
+    # image uploads, in which case let's just pick the first one
+    for img in glance.images.list():
+        if img['name'] == name:
+            # for some reason, nova.glance.list() doesn't return all the
+            # images, while glance.images.list() does. so use the latter to
+            # find the image by name, then the former to get the actual Image
+            # object we need.
+            return nova.glance.find_image(img['id'])
+    raise Exception("Failed to find image %s" % name)
 
-# it's possible multiple images match, e.g. during automated
-# image uploads, in which case let's just pick the first one
 print("INFO: resolving image '%s'" % os.environ['os_image'])
-image = nova.images.findall(name=os.environ['os_image'])[0]
+image = get_image(os.environ['os_image'])
 
 # go through all the flavours and determine which one to use
 min_ram = int(os.environ['os_min_ram'])
 min_vcpus = int(os.environ['os_min_vcpus'])
 min_disk = int(os.environ['os_min_disk'])
-flavors = nova.flavors.findall()
+flavors = nova.flavors.list()
 flavors = [f for f in flavors if (f.ram >= min_ram and
                                   f.vcpus >= min_vcpus and
                                   f.disk >= min_disk)]
@@ -75,7 +94,7 @@ flavor = flavors[0]
 print("INFO: choosing flavor '%s'" % flavor.name)
 
 print("INFO: resolving network '%s'" % os.environ['os_network'])
-network = nova.networks.find(label=os.environ['os_network'])
+network = nova.neutron.find_network(name=os.environ['os_network'])
 
 # if BUILD_ID is defined, let's add it so that it's easy to
 # trace back a node to the exact Jenkins build.
@@ -138,11 +157,6 @@ min_ephemeral = int(os.environ['os_min_ephemeral'])
 if min_ephemeral > 0:
     try:
         print("INFO: creating volume of size %dG" % min_ephemeral)
-        cinder = cinderclient.Client(2, os.environ['OS_USERNAME'],
-                                     os.environ['OS_PASSWORD'],
-                                     os.environ['OS_TENANT_NAME'],
-                                     os.environ['OS_AUTH_URL'],)
-        cinder.authenticate()
         volname = name + '-vol'
         vol = cinder.volumes.create(name=volname, size=min_ephemeral)
         print("INFO: created volume %s (%s)" % (volname, vol.id))
@@ -166,14 +180,8 @@ if min_ephemeral > 0:
             vol.delete()
         raise
 
-ip = server.networks[network.label][0]
+ip = server.networks[network.name][0]
 print("INFO: network IP is %s" % ip)
-if 'os_floating_ip_pool' in os.environ:
-    print("INFO: attaching floating ip")
-    fip = nova.floating_ips.create(os.environ['os_floating_ip_pool'])
-    server.add_floating_ip(fip)
-    ip = fip.ip
-    print("INFO: floating IP is %s" % ip)
 
 write_to_file('node_addr', ip)
 write_to_file('node_volid', vol.id if vol is not None else '')
