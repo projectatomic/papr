@@ -17,6 +17,7 @@
       - os_name_prefix
       - os_keyname
       - os_min_ephemeral
+      - os_flavor_prefix
 '''
 
 import os
@@ -62,6 +63,8 @@ def get_image(name):
 print("INFO: resolving image '%s'" % os.environ['os_image'])
 image = get_image(os.environ['os_image'])
 
+flavor_prefix = os.environ.get('os_flavor_prefix', '')
+
 # go through all the flavours and determine which one to use
 min_ram = int(os.environ['os_min_ram'])
 min_vcpus = int(os.environ['os_min_vcpus'])
@@ -69,7 +72,8 @@ min_disk = int(os.environ['os_min_disk'])
 flavors = nova.flavors.list()
 flavors = [f for f in flavors if (f.ram >= min_ram and
                                   f.vcpus >= min_vcpus and
-                                  f.disk >= min_disk)]
+                                  f.disk >= min_disk and
+                                  f.name.startswith(flavor_prefix))]
 
 if len(flavors) == 0:
     print("ERROR: no flavor satisfies minimum requirements.")

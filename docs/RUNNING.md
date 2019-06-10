@@ -24,6 +24,7 @@ The following optional environment vars may be set:
   keyname, if you want to support virtualized tests.
 - `os_network` -- OpenStack network to use for provisioning,
   if you want to support virtualized tests.
+- `os_flavor_prefix` -- Prefix candidate flavors must have.
 - `os_floating_ip_pool` -- If specified, assign a floating
   IP to the provisioned node from this pool and use the IP
   to communicate with it. This is required if not running on

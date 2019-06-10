@@ -41,6 +41,7 @@ LABEL RUN="/usr/bin/docker run --rm --privileged \
              -e os_keyname \
              -e os_privkey \
              -e os_network \
+             -e os_flavor_prefix \
              -e s3_prefix \
              -e site_repos \
              -e OS_AUTH_URL \
