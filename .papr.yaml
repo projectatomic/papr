@@ -6,7 +6,7 @@ branches:
 required: true
 
 container:
-    image: registry.fedoraproject.org/fedora:27
+    image: registry.fedoraproject.org/fedora:30
 
 packages:
     - '@buildsys-build'
