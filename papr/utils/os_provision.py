@@ -24,12 +24,17 @@ import os
 import sys
 import uuid
 import time
+import random
 from novaclient import client as novaclient
 from glanceclient import client as glanceclient
 from cinderclient import client as cinderclient
 from neutronclient.v2_0 import client as neutronclient
 from keystoneauth1 import session as ksession
 from keystoneauth1.identity import v3
+
+# XXX: absolutely disgusting hack to work around broken OpenStack infra
+random.seed()
+time.sleep(random.randrange(120))
 
 # XXX: clean this up
 
