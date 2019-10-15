@@ -14,7 +14,7 @@ def _valid_hostname(hostname):
         return False
     if re.match(r"[\d.]+$", hostname):
         return False
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)  # noqa: W605, E501
     return all(allowed.match(x) for x in hostname.split("."))
 
 
