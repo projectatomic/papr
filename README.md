@@ -1,3 +1,7 @@
+### ⚠️⚠️⚠️ PAPR will be decommissioned in the near future ⚠️⚠️⚠️
+
+See details in https://github.com/projectatomic/papr/issues/105.
+
 ### PAPR (previously called redhat-ci)
 
 PAPR (pronounced like "paper") is a testing tool similar in
