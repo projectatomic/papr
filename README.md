@@ -1,6 +1,11 @@
-### ⚠️⚠️⚠️ PAPR will be decommissioned in the near future ⚠️⚠️⚠️
+### ⚠️⚠️⚠️ PAPR has been decommissioned ⚠️⚠️⚠️
 
-See details in https://github.com/projectatomic/papr/issues/105.
+It has been replaced by
+[CoreOS CI](https://github.com/coreos/coreos-ci) and
+[Prow](https://github.com/openshift/release/).
+
+See also https://github.com/coreos/fedora-coreos-tracker/issues/764.
+See also https://github.com/projectatomic/papr/issues/105.
 
 ### PAPR (previously called redhat-ci)
 
