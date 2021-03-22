@@ -1,4 +1,4 @@
-### ⚠️⚠️⚠️ PAPR will be decommissioned in the near future ⚠️⚠️⚠️
+### ⚠️⚠️⚠️ PAPR has been decommissioned ⚠️⚠️⚠️
 
 See details in https://github.com/projectatomic/papr/issues/105.
 
